@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/ProtectedRoute.tsx","./src/context/AuthContext.tsx","./src/lib/api.ts","./src/pages/AdminPayments.tsx","./src/pages/AdminRooms.tsx","./src/pages/Login.tsx","./src/pages/StudentDashboard.tsx"],"errors":true,"version":"5.9.3"}
