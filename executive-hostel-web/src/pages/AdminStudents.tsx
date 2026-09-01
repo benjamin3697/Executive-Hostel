@@ -7,15 +7,24 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
   const [detail, setDetail] = useState<StudentDetail | null>(null);
   const [semesters, setSemesters] = useState<SemesterRow[]>([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState("");
+  const [course, setCourse] = useState("");
+  const [yearOfStudy, setYearOfStudy] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busyPaymentId, setBusyPaymentId] = useState<string | null>(null);
   const [enrolling, setEnrolling] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const load = useCallback(() => {
     api.student(studentId).then(setDetail).catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load."));
   }, [studentId]);
   useEffect(load, [load]);
   useEffect(() => { api.semesters().then(setSemesters).catch(() => {}); }, []);
+  useEffect(() => {
+    if (detail) {
+      setCourse(detail.course ?? "");
+      setYearOfStudy(detail.yearOfStudy?.toString() ?? "");
+    }
+  }, [detail]);
 
   async function handleCorrect(paymentId: string, currentAmount: number) {
     const reason = prompt("Reason for this correction (required, shown to the student):");
@@ -42,7 +51,12 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
     if (!selectedSemesterId) return;
     setEnrolling(true);
     try {
-      await api.enrollStudent(studentId, selectedSemesterId);
+      await api.enrollStudent(studentId, {
+        semesterId: selectedSemesterId,
+        course: course || undefined,
+        yearOfStudy: yearOfStudy ? Number(yearOfStudy) : undefined,
+      });
+      setFeedback("Enrollment saved. The student's semester details have been updated.");
       load();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Failed to enroll.");
@@ -81,6 +95,8 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
                   : <span style={{ color: "var(--color-muted)" }}>Not enrolled in a semester yet</span>}
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input className="input" value={course} onChange={(e) => setCourse(e.target.value)} placeholder="Course" style={{ flex: 1, minWidth: 150 }} />
+                <input className="input" value={yearOfStudy} onChange={(e) => setYearOfStudy(e.target.value.replace(/[^\d]/g, ""))} placeholder="Year" inputMode="numeric" style={{ width: 90 }} />
                 <select className="input" value={selectedSemesterId} onChange={(e) => setSelectedSemesterId(e.target.value)} style={{ flex: 1, minWidth: 180 }}>
                   <option value="">Select a semester...</option>
                   {semesters.map((s) => (
@@ -98,6 +114,7 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
                   No semesters configured yet - create one under Settings → Academic Calendar.
                 </div>
               )}
+              {feedback && <div style={{ color: "var(--color-accent)", fontSize: 12.5, marginTop: 8 }}>{feedback}</div>}
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-muted)", marginBottom: 8 }}>PAYMENT HISTORY</div>
@@ -178,6 +195,9 @@ export default function AdminStudents() {
   const [course, setCourse] = useState("");
   const [semesterId, setSemesterId] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [bulkSemesterId, setBulkSemesterId] = useState("");
+  const [bulkEnrolling, setBulkEnrolling] = useState(false);
+  const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
 
   const load = useCallback(() => {
     api.students({
@@ -202,6 +222,20 @@ export default function AdminStudents() {
   const courses = useMemo(() => Array.from(new Set(students?.map((s) => s.course).filter((c): c is string => !!c) ?? [])), [students]);
 
   const anyFilterActive = q || section || roomType || status || year || course || semesterId || paymentStatus;
+  async function handleBulkEnroll() {
+    if (!bulkSemesterId || !confirm("Enroll every active resident into this semester?")) return;
+    setBulkEnrolling(true);
+    setBulkFeedback(null);
+    try {
+      const result = await api.enrollActiveStudents(bulkSemesterId);
+      setBulkFeedback(`${result.enrolledCount} active resident${result.enrolledCount === 1 ? "" : "s"} enrolled in ${result.semester.academicYear} — ${result.semester.label}.`);
+      load();
+    } catch (err) {
+      setBulkFeedback(err instanceof ApiError ? err.message : "Bulk enrollment failed.");
+    } finally {
+      setBulkEnrolling(false);
+    }
+  }
   function clearFilters() {
     setQ(""); setSection(""); setRoomType(""); setStatus(""); setYear(""); setCourse(""); setSemesterId(""); setPaymentStatus("");
   }
@@ -217,7 +251,7 @@ export default function AdminStudents() {
         </button>
       </div>
 
-      <div className="card" style={{ marginBottom: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
+      <div className="card responsive-grid" style={{ marginBottom: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
         <input className="input" placeholder="Search name/reg no./phone" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="input" value={section} onChange={(e) => setSection(e.target.value)}>
           <option value="">All sections</option>
@@ -253,6 +287,21 @@ export default function AdminStudents() {
         {anyFilterActive ? (
           <button onClick={clearFilters} className="btn btn-outline" style={{ fontSize: 12.5 }}>Clear filters</button>
         ) : null}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "var(--color-accent-soft)" }}>
+        <div style={{ flex: 1, minWidth: 210 }}>
+          <strong style={{ fontSize: 13 }}>Semester changeover</strong>
+          <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 3 }}>Enroll all residents currently marked active.</div>
+        </div>
+        <select className="input" value={bulkSemesterId} onChange={(e) => setBulkSemesterId(e.target.value)} style={{ width: 240 }}>
+          <option value="">Select new semester...</option>
+          {semesters.map((s) => <option key={s.id} value={s.id}>{s.academicYear?.label} — {s.label}{s.type === "recess" ? " (Recess)" : ""}</option>)}
+        </select>
+        <button className="btn btn-accent" disabled={!bulkSemesterId || bulkEnrolling} onClick={handleBulkEnroll}>
+          {bulkEnrolling ? "Enrolling..." : "Enroll active residents"}
+        </button>
+        {bulkFeedback && <div style={{ width: "100%", color: "var(--color-accent)", fontSize: 12.5 }}>{bulkFeedback}</div>}
       </div>
 
       {!students && <div style={{ color: "var(--color-muted)" }}>Loading...</div>}

@@ -23,6 +23,7 @@ import AdminMaintenance from "./pages/AdminMaintenance";
 import AdminReports from "./pages/AdminReports";
 import AdminSettings from "./pages/AdminSettings";
 import AdminAuditLog from "./pages/AdminAuditLog";
+import AdminSecurity from "./pages/AdminSecurity";
 import PublicHome from "./pages/public/Home";
 import AvailableRooms from "./pages/public/AvailableRooms";
 import Apply from "./pages/public/Apply";
@@ -50,6 +51,7 @@ const ADMIN_LINKS = [
   { to: "/admin/maintenance", label: "Maintenance" },
   { to: "/admin/reports", label: "Reports" },
   { to: "/admin/audit-log", label: "Audit Log" },
+  { to: "/admin/security", label: "Security" },
   { to: "/admin/settings", label: "Settings" },
 ];
 
@@ -166,6 +168,7 @@ function AppShell() {
         <Route path="/admin/maintenance" element={<ProtectedRoute allow={["administrator", "landlady"]}><AdminMaintenance /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute allow={["administrator", "landlady"]}><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/audit-log" element={<ProtectedRoute allow={["administrator", "landlady"]}><AdminAuditLog /></ProtectedRoute>} />
+        <Route path="/admin/security" element={<ProtectedRoute allow={["administrator", "landlady"]}><AdminSecurity /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute allow={["administrator", "landlady"]}><AdminSettings /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />

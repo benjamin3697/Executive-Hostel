@@ -163,8 +163,12 @@ export const api = {
   students: (query: { q?: string; status?: string; section?: string; roomType?: string; year?: number; course?: string; semesterId?: string; paymentStatus?: string; page?: number; pageSize?: number }) =>
     apiFetch<{ total: number; students: StudentRow[] }>("/api/v1/students", { query }),
   student: (id: string) => apiFetch<StudentDetail>(`/api/v1/students/${id}`),
-  enrollStudent: (id: string, semesterId: string) =>
-    apiFetch(`/api/v1/students/${id}/enroll`, { method: "POST", body: { semesterId } }),
+  enrollStudent: (id: string, payload: { semesterId: string; course?: string; yearOfStudy?: number }) =>
+    apiFetch(`/api/v1/students/${id}/enroll`, { method: "POST", body: payload }),
+  enrollActiveStudents: (semesterId: string) =>
+    apiFetch<{ enrolledCount: number; semester: { id: string; label: string; academicYear: string } }>("/api/v1/students/enroll-bulk", { method: "POST", body: { semesterId } }),
+  lockouts: () => apiFetch<LockedAccount[]>("/api/v1/admin/users/lockouts"),
+  unlockAccount: (id: string) => apiFetch(`/api/v1/admin/users/${id}/unlock`, { method: "PATCH" }),
 
   // ---- Fees ----
   currentFees: () => apiFetch<{ roomType: string; roomTypeId: string; amount: number | null; effectiveDate: string | null }[]>("/api/v1/fees/current"),
@@ -213,6 +217,7 @@ export const api = {
     apiFetch<
       | { studentId: string; userId: string; deliveryMethod: "email" | "sms"; message: string }
       | { studentId: string; userId: string; deliveryMethod: "manual"; temporaryPassword: string; message: string }
+      | { studentId: string; userId: string; deliveryMethod: "chosen_password"; message: string }
     >(`/api/v1/applications/${id}/approve`, { method: "POST" }),
   decideApplication: (id: string, decision: string) =>
     apiFetch(`/api/v1/applications/${id}/decision`, { method: "POST", body: { decision } }),
@@ -347,6 +352,12 @@ export interface StudentDetail extends StudentRow {
   phone: string | null; email: string | null;
   payments: PaymentHistoryRow[];
   termsAcceptedAt: string | null;
+}
+
+export interface LockedAccount {
+  id: string; email: string | null; phone: string | null; role: string;
+  failedLoginAttempts: number; lockedUntil: string | null;
+  student?: { fullName: string; registrationNumber: string } | null;
 }
 
 export interface FeeRow {

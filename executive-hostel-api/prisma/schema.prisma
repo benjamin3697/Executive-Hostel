@@ -303,6 +303,7 @@ model Application {
   semesterId            String?            @map("semester_id")
   phone                 String
   email                 String?
+  passwordHash          String?            @map("password_hash")
   preferredSectionId    String?            @map("preferred_section_id")
   preferredRoomTypeId   String?            @map("preferred_room_type_id")
   expectedCheckinDate   DateTime?          @map("expected_checkin_date")

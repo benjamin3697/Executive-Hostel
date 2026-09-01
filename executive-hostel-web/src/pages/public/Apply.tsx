@@ -8,6 +8,7 @@ export default function Apply() {
   const [form, setForm] = useState({
     fullName: "", registrationNumber: "", course: "", yearOfStudy: "",
     phone: "", email: "", emergencyContact: "",
+    password: "", confirmPassword: "",
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -22,9 +23,15 @@ export default function Apply() {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      setSubmitting(false);
+      return;
+    }
     try {
       await api.submitApplication({
         ...form,
+        confirmPassword: undefined,
         yearOfStudy: form.yearOfStudy ? Number(form.yearOfStudy) : undefined,
         termsAccepted,
       });
@@ -82,6 +89,8 @@ export default function Apply() {
         {field("phone", "Phone number")}
         {field("email", "Email", false, "email")}
         {field("emergencyContact", "Emergency contact", false)}
+        {field("password", "Create password", true, "password")}
+        {field("confirmPassword", "Confirm password", true, "password")}
 
         <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: "var(--color-muted)", marginBottom: 14, cursor: "pointer" }}>
           <input

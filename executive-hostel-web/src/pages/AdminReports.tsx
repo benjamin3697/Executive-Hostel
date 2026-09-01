@@ -32,7 +32,7 @@ export default function AdminReports() {
       <h1 className="font-display" style={{ fontSize: 22, marginBottom: 16 }}>Reports</h1>
 
       <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginBottom: 10 }}>OCCUPANCY</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
+      <div className="responsive-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
         <StatCard label="Total Rooms" value={occupancy.totalRooms} />
         <StatCard label="Occupied" value={occupancy.occupiedRooms} />
         <StatCard label="Vacant" value={occupancy.vacantRooms} />
@@ -40,7 +40,7 @@ export default function AdminReports() {
       </div>
 
       <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginBottom: 10 }}>FINANCIAL</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
+      <div className="responsive-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
         <StatCard label="Expected" value={fmt(financial.expected)} />
         <StatCard label="Verified" value={fmt(financial.verified)} />
         <StatCard label="Pending Verification" value={fmt(financial.pending)} />

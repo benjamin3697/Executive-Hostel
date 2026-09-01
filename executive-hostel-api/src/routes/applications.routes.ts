@@ -6,6 +6,7 @@ import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
 import { requireRole } from "../middleware/authorize";
 import { approveApplication, decideApplication, ApplicationError } from "../services/application.service";
 import { REGISTRATION_NUMBER_REGEX } from "../lib/validation";
+import { hashPassword } from "../lib/auth";
 
 export const applicationsRouter = Router();
 
@@ -38,6 +39,7 @@ const applySchema = z.object({
   semesterId: z.string().uuid().optional(),
   phone: z.string().min(7).max(20),
   email: z.string().email().optional(),
+  password: z.string().min(8, "Password must be at least 8 characters."),
   preferredSectionId: z.string().uuid().optional(),
   preferredRoomTypeId: z.string().uuid().optional(),
   expectedCheckinDate: z.string().datetime().optional(),
@@ -50,10 +52,11 @@ applicationsRouter.post("/", applyLimiter, async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input." } });
   }
-  const { termsAccepted, ...applicationFields } = parsed.data;
+  const { termsAccepted, password, ...applicationFields } = parsed.data;
   const application = await prisma.application.create({
     data: {
       ...applicationFields,
+      passwordHash: await hashPassword(password),
       expectedCheckinDate: parsed.data.expectedCheckinDate ? new Date(parsed.data.expectedCheckinDate) : undefined,
       university: parsed.data.university ?? "Soroti University",
       termsAcceptedAt: new Date(),
@@ -91,13 +94,14 @@ applicationsRouter.get("/", requireRole("administrator", "landlady"), async (req
     }),
   ]);
 
-  res.json({ total, page, pageSize, applications });
+  res.json({ total, page, pageSize, applications: applications.map(({ passwordHash: _passwordHash, ...safeApplication }) => safeApplication) });
 });
 
 applicationsRouter.get("/:id", requireRole("administrator", "landlady"), async (req, res) => {
   const application = await prisma.application.findUnique({ where: { id: req.params.id } });
   if (!application) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Application not found." } });
-  res.json(application);
+  const { passwordHash: _passwordHash, ...safeApplication } = application;
+  res.json(safeApplication);
 });
 
 // ---------------------------------------------------------------------------

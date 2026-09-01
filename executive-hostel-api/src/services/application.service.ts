@@ -59,8 +59,8 @@ export async function approveApplication(params: { applicationId: string; review
       }
     }
 
-    const temporaryPassword = generateTemporaryPassword();
-    const passwordHash = await hashPassword(temporaryPassword);
+    const temporaryPassword = application.passwordHash ? undefined : generateTemporaryPassword();
+    const passwordHash = application.passwordHash ?? await hashPassword(temporaryPassword!);
 
     const user = await tx.user.create({
       data: { email: application.email ?? undefined, phone: application.phone, passwordHash, role: "student" },
@@ -99,7 +99,12 @@ export async function approveApplication(params: { applicationId: string; review
     };
   });
 
-  const base = { application: result.application, studentId: result.studentId, userId: result.userId };
+  const { passwordHash: _passwordHash, ...safeApplication } = result.application;
+  const base = { application: safeApplication, studentId: result.studentId, userId: result.userId };
+
+  if (!result.temporaryPassword) {
+    return { ...base, deliveryMethod: "chosen_password" as const, message: "Account created. The applicant can sign in with the password they chose." };
+  }
 
   if (result.email) {
     await sendApplicationApprovedEmail(result.email, result.fullName, result.temporaryPassword);

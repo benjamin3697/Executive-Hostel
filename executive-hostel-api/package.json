@@ -20,6 +20,7 @@
     "@aws-sdk/s3-request-presigner": "^3.658.0",
     "@prisma/client": "^5.20.0",
     "argon2": "^0.41.1",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",

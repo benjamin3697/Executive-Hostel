@@ -87,14 +87,14 @@ export default function SubmitPayment() {
       <h1 className="font-display" style={{ fontSize: 22, marginBottom: 16 }}>Submit Payment</h1>
 
       {summary && (
-        <div className="card" style={{ marginBottom: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
+        <div className="card mobile-two-column" style={{ marginBottom: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
           <div><span style={{ color: "var(--color-muted)" }}>Fee</span><div style={{ fontWeight: 700 }}>{fmt(summary.fee)}</div></div>
           <div><span style={{ color: "var(--color-muted)" }}>Balance</span><div style={{ fontWeight: 700, color: "var(--color-danger)" }}>{fmt(summary.balance)}</div></div>
         </div>
       )}
 
       {bankInfo && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+        <div className="mobile-two-column" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
           <div className="card">
             <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
               <Landmark size={16} color="var(--color-accent)" /> <strong style={{ fontSize: 13 }}>Bank — Preferred</strong>

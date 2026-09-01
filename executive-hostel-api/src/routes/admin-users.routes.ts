@@ -45,6 +45,25 @@ adminUsersRouter.get("/", manageUsersGuard, async (_req, res) => {
   res.json(users);
 });
 
+// Account lockouts include students, since all users authenticate through the
+// same User record and a locked student otherwise has no self-service path.
+adminUsersRouter.get("/lockouts", requireRole("administrator", "landlady"), async (_req, res) => {
+  const users = await prisma.user.findMany({
+    where: { lockedUntil: { gt: new Date() } },
+    select: { id: true, email: true, phone: true, role: true, failedLoginAttempts: true, lockedUntil: true, student: { select: { fullName: true, registrationNumber: true } } },
+    orderBy: { lockedUntil: "asc" },
+  });
+  res.json(users);
+});
+
+adminUsersRouter.patch("/:id/unlock", requireRole("administrator", "landlady"), async (req: AuthenticatedRequest, res) => {
+  const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!target) return res.status(404).json({ error: { code: "NOT_FOUND", message: "User not found." } });
+  const updated = await prisma.user.update({ where: { id: target.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
+  await recordAudit({ actorId: req.user!.id, action: "auth.account_unlocked", entityType: "User", entityId: target.id });
+  res.json({ id: updated.id, failedLoginAttempts: updated.failedLoginAttempts, lockedUntil: updated.lockedUntil });
+});
+
 // ---------------------------------------------------------------------------
 // POST /admin/users - provision a new staff account
 // ---------------------------------------------------------------------------

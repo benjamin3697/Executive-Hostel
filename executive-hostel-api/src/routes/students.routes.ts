@@ -154,7 +154,28 @@ studentsRouter.patch("/:id", requireRole("administrator", "landlady"), async (re
 // toward the student's current balance (they scope to Payment.semesterId,
 // which is stamped at submission time from this field).
 // ---------------------------------------------------------------------------
-const enrollSchema = z.object({ semesterId: z.string().uuid() });
+const enrollSchema = z.object({
+  semesterId: z.string().uuid(),
+  course: z.string().max(150).optional(),
+  yearOfStudy: z.number().int().min(1).max(8).optional(),
+});
+
+// POST /students/enroll-bulk - move every active resident into a new semester
+studentsRouter.post("/enroll-bulk", requireRole("administrator", "landlady"), async (req: AuthenticatedRequest, res) => {
+  const parsed = enrollSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "semesterId is required." } });
+  }
+  const semester = await prisma.semester.findUnique({ where: { id: parsed.data.semesterId }, include: { academicYear: true } });
+  if (!semester) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Semester not found." } });
+
+  const result = await prisma.student.updateMany({ where: { status: "active" }, data: { semesterId: semester.id } });
+  await recordAudit({
+    actorId: req.user!.id, action: "students.bulk_enrolled", entityType: "Semester", entityId: semester.id,
+    newValue: { semesterId: semester.id, semesterLabel: semester.label, academicYear: semester.academicYear.label, enrolledCount: result.count },
+  });
+  res.json({ enrolledCount: result.count, semester: { id: semester.id, label: semester.label, academicYear: semester.academicYear.label } });
+});
 
 studentsRouter.post("/:id/enroll", requireRole("administrator", "landlady"), async (req: AuthenticatedRequest, res) => {
   const parsed = enrollSchema.safeParse(req.body);
@@ -167,14 +188,17 @@ studentsRouter.post("/:id/enroll", requireRole("administrator", "landlady"), asy
   const semester = await prisma.semester.findUnique({ where: { id: parsed.data.semesterId }, include: { academicYear: true } });
   if (!semester) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Semester not found." } });
 
-  const updated = await prisma.student.update({ where: { id: student.id }, data: { semesterId: semester.id } });
+  const updated = await prisma.student.update({
+    where: { id: student.id },
+    data: { semesterId: semester.id, ...(parsed.data.course !== undefined ? { course: parsed.data.course } : {}), ...(parsed.data.yearOfStudy !== undefined ? { yearOfStudy: parsed.data.yearOfStudy } : {}) },
+  });
 
   await recordAudit({
     actorId: req.user!.id, action: "student.enrolled",
     entityType: "Student", entityId: student.id,
     previousValue: { semesterId: student.semesterId },
-    newValue: { semesterId: semester.id, semesterLabel: semester.label, academicYear: semester.academicYear.label },
+    newValue: { semesterId: semester.id, semesterLabel: semester.label, academicYear: semester.academicYear.label, course: updated.course, yearOfStudy: updated.yearOfStudy },
   });
 
-  res.json(updated);
+  res.json({ ...updated, semester: { id: semester.id, label: semester.label, academicYear: semester.academicYear.label, type: semester.type } });
 });

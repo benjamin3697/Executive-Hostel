@@ -83,3 +83,9 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+@media (max-width: 600px) {
+  .responsive-grid { grid-template-columns: 1fr !important; }
+  .responsive-grid .input { min-width: 0; }
+  .mobile-two-column { grid-template-columns: 1fr !important; }
+}
