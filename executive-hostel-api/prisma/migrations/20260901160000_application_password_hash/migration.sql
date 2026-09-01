@@ -1,1 +1,1 @@
-ALTER TABLE "applications" ADD COLUMN "password_hash" TEXT;
+ALTER TABLE "applications" ADD "password_hash" TEXT;
