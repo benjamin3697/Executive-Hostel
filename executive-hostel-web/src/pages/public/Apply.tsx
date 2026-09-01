@@ -59,6 +59,11 @@ export default function Apply() {
 
   return (
     <div style={{ padding: 24, maxWidth: 480, margin: "0 auto" }}>
+      <img
+        src="/images/hostel-exterior.jpg"
+        alt="Executive Hostel"
+        style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 12, marginBottom: 16 }}
+      />
       <h1 className="font-display" style={{ fontSize: 22, marginBottom: 4 }}>Apply for Accommodation</h1>
       <p style={{ fontSize: 12.5, color: "var(--color-muted)", marginBottom: 16 }}>
         Executive Hostel is a boys' hostel for male students of Soroti University.

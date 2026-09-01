@@ -160,7 +160,7 @@ export const api = {
     apiFetch(`/api/v1/rooms/${roomId}/checkout`, { method: "POST", body: { studentId, ...payload } }),
 
   // ---- Students (admin) ----
-  students: (query: { q?: string; status?: string; page?: number }) =>
+  students: (query: { q?: string; status?: string; section?: string; roomType?: string; year?: number; course?: string; semesterId?: string; paymentStatus?: string; page?: number; pageSize?: number }) =>
     apiFetch<{ total: number; students: StudentRow[] }>("/api/v1/students", { query }),
   student: (id: string) => apiFetch<StudentDetail>(`/api/v1/students/${id}`),
   enrollStudent: (id: string, semesterId: string) =>
@@ -340,6 +340,7 @@ export interface StudentRow {
   course: string | null; yearOfStudy: number | null;
   currentRoom?: { roomNumber: string; section: { name: string }; roomType: { name: string } } | null;
   semester?: { id: string; label: string; type: "regular" | "recess"; academicYear: { label: string } } | null;
+  payment: PaymentSummary;
 }
 
 export interface StudentDetail extends StudentRow {

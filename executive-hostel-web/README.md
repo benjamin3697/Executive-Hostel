@@ -12,6 +12,10 @@ Make sure the backend is running first — see its own README for setup (Postgre
 
 For production, set `VITE_API_BASE_URL` to your deployed API's URL before `npm run build`.
 
+## Real hostel photos
+
+`public/images/hostel-exterior.jpg` and `hostel-walkway.jpg` are real photos of Executive Hostel (cropped to remove phone-gallery UI chrome, auto-contrast applied). Used as the homepage hero background, a compound gallery image on the homepage, and a header image on the Apply page. Replace these two files directly if you get better/official photos later — same filenames, same usage sites.
+
 ## Pages built
 
 **Public (no login):**
@@ -25,7 +29,7 @@ For production, set `VITE_API_BASE_URL` to your deployed API's URL before `npm r
 
 **Administrator / Landlady:**
 - Room Management — grid with filters, a real student picker to **assign** a vacant room, and **check-in/check-out** actions
-- Students — search/filter, click a student for their detail (room, contact info, full payment history, whether they've agreed to the Rules & Regulations) with **Semester Enrollment** (assign them into a regular or recess semester — this is what drives which fee and which payments count toward their current balance) and a **Correct** action on any verified payment
+- Students — a real spreadsheet-style table (name, registration number, room, course, year, semester, fee, paid, balance, payment status, residency status), filterable by any of section/room type/status/year/course/semester/payment status simultaneously, with a one-click **Export CSV**. Click any row for that student's full detail (contact info, full payment history, whether they've agreed to the Rules & Regulations) with **Semester Enrollment** (assign them into a regular or recess semester — this is what drives which fee and which payments count toward their current balance) and a **Correct** action on any verified payment
 - Applications — review, **Approve** (provisions the account and emails/SMSes login credentials automatically), Reject/Waitlist/Under Review
 - Payment Verification — Approve/Reject/Request Clarification against the real queue
 - Announcements — publish with real **section/room/year audience targeting** (not just "all residents")
