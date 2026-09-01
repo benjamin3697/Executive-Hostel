@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 import { notifyByEmailOrSms } from "./notify.service";
 
 // Local shape for the .then() destructuring below - same reasoning as
@@ -70,7 +71,7 @@ export async function getCurrentFeeForStudent(studentId: string) {
  */
 export interface PaymentForBalance {
   status: string;
-  amount: number | string; // Prisma.Decimal stringifies/numbers cleanly via Number()
+  amount: Decimal | number | string; // Prisma.Decimal stringifies/numbers cleanly via Number()
 }
 
 export function summarizeBalance(feeAmount: number | null, payments: PaymentForBalance[]) {
