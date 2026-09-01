@@ -1,0 +1,41 @@
+# Local development only. For production, use a managed Postgres (Neon,
+# Supabase, or your host's Postgres addon) rather than this container -
+# managed services handle backups/failover, which docs Section 57 requires
+# and a bare docker volume doesn't give you for free.
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hostel
+      POSTGRES_PASSWORD: hostel_dev_password
+      POSTGRES_DB: executive_hostel
+    ports:
+      - "5432:5432"
+    volumes:
+      - hostel_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hostel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      # Overrides .env's DATABASE_URL to point at the compose network's
+      # postgres service rather than localhost.
+      DATABASE_URL: "postgresql://hostel:hostel_dev_password@postgres:5432/executive_hostel?schema=public"
+
+volumes:
+  hostel_pg_data:
