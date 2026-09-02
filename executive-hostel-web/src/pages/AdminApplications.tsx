@@ -96,6 +96,11 @@ export default function AdminApplications() {
               </div>
               <StatusBadge status={a.status} label={a.status} />
             </div>
+            {a.preferredRoom && (
+              <div style={{ fontSize: 12.5, color: "var(--color-accent)", fontWeight: 600, marginTop: 10 }}>
+                Requested room: {a.preferredRoom.section.name} - Room {a.preferredRoom.roomNumber}
+              </div>
+            )}
             {(a.status === "submitted" || a.status === "under_review") && (
               <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                 <button disabled={busyId === a.id} onClick={() => handleApprove(a.id)} className="btn btn-accent">

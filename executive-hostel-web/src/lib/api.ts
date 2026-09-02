@@ -382,6 +382,7 @@ export interface PaymentHistoryRow {
 export interface ApplicationRow {
   id: string; fullName: string; phone: string; email: string | null;
   registrationNumber: string | null; course: string | null; status: string; createdAt: string;
+  preferredRoom?: { roomNumber: string; section: { name: string } } | null;
 }
 
 export interface AnnouncementRow {

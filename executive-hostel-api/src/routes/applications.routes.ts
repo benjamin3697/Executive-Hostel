@@ -42,6 +42,7 @@ const applySchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
   preferredSectionId: z.string().uuid().optional(),
   preferredRoomTypeId: z.string().uuid().optional(),
+  preferredRoomId: z.string().uuid().optional(),
   expectedCheckinDate: z.string().datetime().optional(),
   emergencyContact: z.string().max(150).optional(),
   termsAccepted: z.literal(true, { errorMap: () => ({ message: "You must agree to the Hostel Rules and Regulations to apply." }) }),
@@ -53,6 +54,21 @@ applicationsRouter.post("/", applyLimiter, async (req, res) => {
     return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input." } });
   }
   const { termsAccepted, password, ...applicationFields } = parsed.data;
+  if (parsed.data.preferredRoomId) {
+    const room = await prisma.room.findUnique({
+      where: { id: parsed.data.preferredRoomId },
+      select: { status: true, sectionId: true, roomTypeId: true },
+    });
+    if (!room || room.status !== "vacant") {
+      return res.status(409).json({ error: { code: "ROOM_UNAVAILABLE", message: "That room is no longer available. Please choose another room." } });
+    }
+    if (parsed.data.preferredSectionId && parsed.data.preferredSectionId !== room.sectionId) {
+      return res.status(400).json({ error: { code: "ROOM_PREFERENCE_MISMATCH", message: "The selected room does not match the preferred section." } });
+    }
+    if (parsed.data.preferredRoomTypeId && parsed.data.preferredRoomTypeId !== room.roomTypeId) {
+      return res.status(400).json({ error: { code: "ROOM_PREFERENCE_MISMATCH", message: "The selected room does not match the preferred room type." } });
+    }
+  }
   const application = await prisma.application.create({
     data: {
       ...applicationFields,
@@ -94,7 +110,19 @@ applicationsRouter.get("/", requireRole("administrator", "landlady"), async (req
     }),
   ]);
 
-  res.json({ total, page, pageSize, applications: applications.map(({ passwordHash: _passwordHash, ...safeApplication }) => safeApplication) });
+  const preferredRoomIds = applications.map((application) => application.preferredRoomId).filter((id): id is string => !!id);
+  const preferredRooms = await prisma.room.findMany({
+    where: { id: { in: preferredRoomIds } },
+    select: { id: true, roomNumber: true, section: { select: { name: true } } },
+  });
+  const roomById = new Map(preferredRooms.map((room) => [room.id, room]));
+  res.json({
+    total, page, pageSize,
+    applications: applications.map(({ passwordHash: _passwordHash, ...safeApplication }) => ({
+      ...safeApplication,
+      preferredRoom: safeApplication.preferredRoomId ? roomById.get(safeApplication.preferredRoomId) ?? null : null,
+    })),
+  });
 });
 
 applicationsRouter.get("/:id", requireRole("administrator", "landlady"), async (req, res) => {

@@ -306,6 +306,7 @@ model Application {
   passwordHash          String?            @map("password_hash")
   preferredSectionId    String?            @map("preferred_section_id")
   preferredRoomTypeId   String?            @map("preferred_room_type_id")
+  preferredRoomId       String?            @map("preferred_room_id")
   expectedCheckinDate   DateTime?          @map("expected_checkin_date")
   emergencyContact      String?            @map("emergency_contact")
   status                ApplicationStatus  @default(submitted)

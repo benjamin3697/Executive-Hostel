@@ -28,7 +28,8 @@ export default function AvailableRooms() {
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>{r.section}</div>
             <div className="font-display" style={{ fontSize: 20, fontWeight: 600 }}>Room {r.roomNumber}</div>
             <div style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 8 }}>{r.roomType} · Single Room</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-accent)" }}>{fmt(feeFor(r.roomType))}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-accent)", marginBottom: 10 }}>{fmt(feeFor(r.roomType))}</div>
+            <Link to={`/apply?roomId=${encodeURIComponent(r.id)}`} className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12 }}>Apply for this room</Link>
           </div>
         ))}
       </div>

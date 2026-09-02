@@ -1,10 +1,14 @@
-import { useState, FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, FormEvent } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
 
 const REGISTRATION_NUMBER_PATTERN = "\\d{10}";
+type AvailableRoom = { id: string; section: string; roomNumber: string; roomType: string; status: string };
 
 export default function Apply() {
+  const [searchParams] = useSearchParams();
+  const [rooms, setRooms] = useState<AvailableRoom[]>([]);
+  const [preferredRoomId, setPreferredRoomId] = useState(searchParams.get("roomId") ?? "");
   const [form, setForm] = useState({
     fullName: "", registrationNumber: "", course: "", yearOfStudy: "",
     phone: "", email: "", emergencyContact: "",
@@ -14,6 +18,10 @@ export default function Apply() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    api.availableRooms().then(setRooms).catch(() => setRooms([]));
+  }, []);
 
   function set(key: string, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -33,6 +41,7 @@ export default function Apply() {
         ...form,
         confirmPassword: undefined,
         yearOfStudy: form.yearOfStudy ? Number(form.yearOfStudy) : undefined,
+        preferredRoomId: preferredRoomId || undefined,
         termsAccepted,
       });
       setSuccess(true);
@@ -76,6 +85,14 @@ export default function Apply() {
         Executive Hostel is a boys' hostel for male students of Soroti University.
       </p>
       <form onSubmit={handleSubmit} className="card">
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Preferred room</label>
+          <select className="input" value={preferredRoomId} onChange={(e) => setPreferredRoomId(e.target.value)}>
+            <option value="">No specific room (assign any available room)</option>
+            {rooms.map((room) => <option key={room.id} value={room.id}>{room.section} - Room {room.roomNumber} ({room.roomType})</option>)}
+          </select>
+          <div style={{ fontSize: 11.5, color: "var(--color-muted)", marginTop: 5 }}>Room availability is confirmed when your application is submitted.</div>
+        </div>
         {field("fullName", "Full name")}
         {field("registrationNumber", "University registration number", false, "text", {
           pattern: REGISTRATION_NUMBER_PATTERN,
