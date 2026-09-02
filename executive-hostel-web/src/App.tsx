@@ -94,14 +94,14 @@ function TopNav() {
   }
 
   return (
-    <div style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-      <Link to="/" className="font-display" style={{ fontWeight: 700, fontSize: 16, color: "var(--color-primary-dark)", textDecoration: "none" }}>
+    <div className="site-nav" style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <Link to="/" className="font-display site-nav-brand" style={{ fontWeight: 700, fontSize: 16, color: "var(--color-primary-dark)", textDecoration: "none" }}>
         Executive Hostel
       </Link>
       {links.map((l) => (
         <Link key={l.to} to={l.to} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", textDecoration: "none" }}>{l.label}</Link>
       ))}
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="site-nav-actions" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
         <NotificationBell />
         <button onClick={handleLogout} className="btn btn-outline" style={{ padding: "6px 12px" }}>
           <LogOut size={14} /> Sign out
@@ -113,8 +113,8 @@ function TopNav() {
 
 function PublicNav() {
   return (
-    <div style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-      <Link to="/" className="font-display" style={{ fontWeight: 700, fontSize: 16, color: "var(--color-primary-dark)", textDecoration: "none" }}>
+    <div className="site-nav public-nav" style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <Link to="/" className="font-display site-nav-brand" style={{ fontWeight: 700, fontSize: 16, color: "var(--color-primary-dark)", textDecoration: "none" }}>
         Executive Hostel
       </Link>
       <Link to="/rooms" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-text)" }}>Available Rooms</Link>

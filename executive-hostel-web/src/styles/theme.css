@@ -22,6 +22,18 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: "Work Sans", Inter, system-ui, sans-serif;
+  min-width: 0;
+}
+
+#root { min-width: 0; overflow-x: hidden; }
+
+img, svg, video { max-width: 100%; }
+
+button, .btn { min-height: 40px; }
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 h1, h2, h3, .font-display {
@@ -86,7 +98,29 @@ input[type="number"] {
 }
 
 @media (max-width: 600px) {
+  .site-nav {
+    padding: 10px 12px !important;
+    gap: 10px 12px !important;
+    align-items: center;
+  }
+  .site-nav-brand { flex: 1 0 100%; }
+  .site-nav > a:not(.site-nav-brand) { font-size: 12px !important; }
+  .site-nav-actions {
+    margin-left: auto !important;
+    gap: 10px !important;
+  }
+  .site-nav-actions .btn { padding: 6px 9px !important; }
+  .public-nav .btn { margin-left: 0 !important; }
+
+  .card { padding: 12px; }
+  .input { min-width: 0; }
+  h1.font-display { overflow-wrap: anywhere; }
+
   .responsive-grid { grid-template-columns: 1fr !important; }
   .responsive-grid .input { min-width: 0; }
   .mobile-two-column { grid-template-columns: 1fr !important; }
+
+  [style*="padding: 24px"] { padding: 16px !important; }
+  [style*="padding: 32px"] { padding: 20px !important; }
+  [style*="gridTemplateColumns: \"1fr 1fr\""] { grid-template-columns: 1fr !important; }
 }

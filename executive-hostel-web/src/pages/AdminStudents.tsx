@@ -309,6 +309,7 @@ export default function AdminStudents() {
 
       {students && students.length > 0 && (
         <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+          <div className="table-scroll">
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 900 }}>
             <thead>
               <tr style={{ background: "var(--color-bg)", textAlign: "left" }}>
@@ -341,6 +342,7 @@ export default function AdminStudents() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
