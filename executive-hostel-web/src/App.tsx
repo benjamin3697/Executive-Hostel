@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { LogOut, Bell } from "lucide-react";
+import { LogOut, Bell, Menu, X } from "lucide-react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { api } from "./lib/api";
@@ -86,6 +86,7 @@ function NotificationBell() {
 function TopNav() {
   const { role, logout } = useAuth();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const links = role === "student" ? STUDENT_LINKS : role === "administrator" || role === "landlady" ? ADMIN_LINKS : [];
 
   async function handleLogout() {
@@ -94,13 +95,16 @@ function TopNav() {
   }
 
   return (
-    <div className="site-nav" style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+    <div className={`site-nav ${menuOpen ? "is-open" : ""}`} style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
       <Link to="/" className="font-display site-nav-brand" style={{ fontWeight: 700, fontSize: 16, color: "var(--color-primary-dark)", textDecoration: "none" }}>
         Executive Hostel
       </Link>
-      {links.map((l) => (
-        <Link key={l.to} to={l.to} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", textDecoration: "none" }}>{l.label}</Link>
-      ))}
+      <button className="nav-menu-toggle" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+        {menuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+      <nav className="site-nav-links">
+        {links.map((l) => <Link key={l.to} to={l.to} onClick={() => setMenuOpen(false)}>{l.label}</Link>)}
+      </nav>
       <div className="site-nav-actions" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
         <NotificationBell />
         <button onClick={handleLogout} className="btn btn-outline" style={{ padding: "6px 12px" }}>
@@ -112,16 +116,24 @@ function TopNav() {
 }
 
 function PublicNav() {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div className="site-nav public-nav" style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+    <div className={`site-nav public-nav ${menuOpen ? "is-open" : ""}`} style={{ background: "#fff", borderBottom: "1px solid var(--color-border)", padding: "12px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
       <Link to="/" className="font-display site-nav-brand" style={{ fontWeight: 700, fontSize: 16, color: "var(--color-primary-dark)", textDecoration: "none" }}>
         Executive Hostel
       </Link>
-      <Link to="/rooms" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-text)" }}>Available Rooms</Link>
-      <Link to="/guidelines" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-text)" }}>Guidelines</Link>
-      <Link to="/contact" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-text)" }}>Contact</Link>
-      <Link to="/apply" className="btn btn-primary" style={{ marginLeft: "auto", padding: "6px 14px" }}>Apply</Link>
-      <Link to="/login" className="btn btn-outline" style={{ padding: "6px 14px" }}>Student Login</Link>
+      <button className="nav-menu-toggle" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+        {menuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+      <nav className="site-nav-links">
+        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Available Rooms</Link>
+        <Link to="/guidelines" onClick={() => setMenuOpen(false)}>Guidelines</Link>
+        <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>
+      </nav>
+      <div className="site-nav-actions" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+        <Link to="/apply" className="btn btn-primary" style={{ padding: "6px 14px" }}>Apply</Link>
+        <Link to="/login" className="btn btn-outline" style={{ padding: "6px 14px" }}>Student Login</Link>
+      </div>
     </div>
   );
 }

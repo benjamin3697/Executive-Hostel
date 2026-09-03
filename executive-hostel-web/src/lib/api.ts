@@ -226,6 +226,9 @@ export const api = {
   announcements: () => apiFetch<AnnouncementRow[]>("/api/v1/announcements"),
   createAnnouncement: (payload: { title: string; message: string; priority: string; audienceType: string; audienceRef?: string }) =>
     apiFetch("/api/v1/announcements", { method: "POST", body: payload }),
+  updateAnnouncement: (id: string, payload: Partial<{ title: string; message: string; priority: string; audienceType: string; audienceRef?: string }>) =>
+    apiFetch<AnnouncementRow>(`/api/v1/announcements/${id}`, { method: "PATCH", body: payload }),
+  deleteAnnouncement: (id: string) => apiFetch<void>(`/api/v1/announcements/${id}`, { method: "DELETE" }),
 
   // ---- Maintenance ----
   submitMaintenance: (payload: { category: string; description: string; imageUrl?: string }) =>
@@ -254,10 +257,6 @@ export const api = {
     apiFetch("/api/v1/contacts", { method: "POST", body: payload }),
   deleteContact: (id: string) => apiFetch(`/api/v1/contacts/${id}`, { method: "DELETE" }),
   guidelines: () => apiFetch<GuidelineRow[]>("/api/v1/guidelines"),
-  createGuideline: (payload: { category: string; content: string }) =>
-    apiFetch("/api/v1/guidelines", { method: "POST", body: payload }),
-  updateGuideline: (id: string, payload: { category?: string; content?: string }) =>
-    apiFetch(`/api/v1/guidelines/${id}`, { method: "PATCH", body: payload }),
 
   // ---- Notifications ----
   notifications: (unreadOnly = false) =>

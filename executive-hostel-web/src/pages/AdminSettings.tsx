@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent } from "react";
-import { api, ContactRow, GuidelineRow, AcademicYearRow, SemesterRow, FeeRow, ApiError } from "../lib/api";
+import { api, ContactRow, AcademicYearRow, SemesterRow, FeeRow, ApiError } from "../lib/api";
 
 const PAYMENT_KEYS = [
   { key: "bank_name", label: "Bank Name" },
@@ -14,7 +14,6 @@ const PAYMENT_KEYS = [
 export default function AdminSettings() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [contacts, setContacts] = useState<ContactRow[] | null>(null);
-  const [guidelines, setGuidelines] = useState<GuidelineRow[] | null>(null);
   const [academicYears, setAcademicYears] = useState<AcademicYearRow[]>([]);
   const [semesters, setSemesters] = useState<SemesterRow[]>([]);
   const [fees, setFees] = useState<FeeRow[]>([]);
@@ -27,8 +26,6 @@ export default function AdminSettings() {
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
 
-  const [guidelineCategory, setGuidelineCategory] = useState("");
-  const [guidelineContent, setGuidelineContent] = useState("");
 
   const [newYearLabel, setNewYearLabel] = useState("");
   const [newSemesterYearId, setNewSemesterYearId] = useState("");
@@ -46,7 +43,6 @@ export default function AdminSettings() {
       setValues(map);
     }).catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load settings."));
     api.contacts().then(setContacts).catch(() => {});
-    api.guidelines().then(setGuidelines).catch(() => {});
     api.academicYears().then(setAcademicYears).catch(() => {});
     api.semesters().then(setSemesters).catch(() => {});
     api.feeHistory().then(setFees).catch(() => {});
@@ -73,13 +69,6 @@ export default function AdminSettings() {
     await api.createContact({ label: contactLabel, phone: contactPhone || undefined, email: contactEmail || undefined });
     setContactLabel(""); setContactPhone(""); setContactEmail("");
     api.contacts().then(setContacts);
-  }
-
-  async function handleAddGuideline(e: FormEvent) {
-    e.preventDefault();
-    await api.createGuideline({ category: guidelineCategory, content: guidelineContent });
-    setGuidelineCategory(""); setGuidelineContent("");
-    api.guidelines().then(setGuidelines);
   }
 
   async function handleAddYear(e: FormEvent) {
@@ -156,21 +145,6 @@ export default function AdminSettings() {
         <input className="input" placeholder="Phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} style={{ flex: "1 1 140px" }} />
         <input className="input" placeholder="Email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} style={{ flex: "1 1 140px" }} />
         <button type="submit" className="btn btn-outline">Add Contact</button>
-      </form>
-
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginBottom: 10 }}>HOSTEL GUIDELINES</h2>
-      <div style={{ marginBottom: 12 }}>
-        {guidelines?.map((g) => (
-          <div key={g.id} className="card" style={{ marginBottom: 8 }}>
-            <strong style={{ fontSize: 13 }}>{g.category}</strong>
-            <p style={{ fontSize: 12.5, color: "var(--color-muted)", margin: "4px 0 0" }}>{g.content}</p>
-          </div>
-        ))}
-      </div>
-      <form onSubmit={handleAddGuideline} className="card">
-        <input className="input" placeholder="Category (e.g. Quiet Hours)" required value={guidelineCategory} onChange={(e) => setGuidelineCategory(e.target.value)} style={{ marginBottom: 8 }} />
-        <textarea className="input" placeholder="Content" required rows={3} value={guidelineContent} onChange={(e) => setGuidelineContent(e.target.value)} style={{ marginBottom: 8 }} />
-        <button type="submit" className="btn btn-outline">Add Guideline</button>
       </form>
 
       <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginTop: 24, marginBottom: 10 }}>ACADEMIC CALENDAR</h2>

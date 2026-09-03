@@ -150,7 +150,8 @@ contactsRouter.delete(
 );
 
 // ---------------------------------------------------------------------------
-// Hostel Guidelines (docs Section 41) - editable content, grouped by category
+// Hostel Rules and Regulations are permanent system content. They remain
+// publicly readable, but there is intentionally no admin write endpoint.
 // ---------------------------------------------------------------------------
 export const guidelinesRouter = Router();
 
@@ -158,42 +159,3 @@ guidelinesRouter.get("/", async (_req, res) => {
   const rows = await prisma.hostelGuideline.findMany({ orderBy: { category: "asc" } });
   res.json(rows);
 });
-
-const guidelineSchema = z.object({
-  category: z.string().min(1).max(60),
-  content: z.string().min(1).max(20000),
-});
-
-guidelinesRouter.post(
-  "/",
-  authenticate,
-  requireRole("administrator", "landlady"),
-  requirePermission("manage_settings"),
-  async (req: AuthenticatedRequest, res) => {
-    const parsed = guidelineSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input." } });
-    }
-    const row = await prisma.hostelGuideline.create({ data: { ...parsed.data, updatedBy: req.user!.id } });
-    await recordAudit({ actorId: req.user!.id, action: "guideline.created", entityType: "HostelGuideline", entityId: row.id });
-    res.status(201).json(row);
-  }
-);
-
-guidelinesRouter.patch(
-  "/:id",
-  authenticate,
-  requireRole("administrator", "landlady"),
-  requirePermission("manage_settings"),
-  async (req: AuthenticatedRequest, res) => {
-    const parsed = guidelineSchema.partial().safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid input." } });
-    }
-    const existing = await prisma.hostelGuideline.findUnique({ where: { id: req.params.id } });
-    if (!existing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Guideline not found." } });
-    const updated = await prisma.hostelGuideline.update({ where: { id: req.params.id }, data: { ...parsed.data, updatedBy: req.user!.id } });
-    await recordAudit({ actorId: req.user!.id, action: "guideline.updated", entityType: "HostelGuideline", entityId: existing.id, previousValue: existing, newValue: updated });
-    res.json(updated);
-  }
-);

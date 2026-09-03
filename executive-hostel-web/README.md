@@ -35,7 +35,7 @@ For production, set `VITE_API_BASE_URL` to your deployed API's URL before `npm r
 - Announcements — publish with real **section/room/year audience targeting** (not just "all residents")
 - Maintenance — manage status (submitted → in progress → resolved → closed)
 - Reports — occupancy, financial, "who hasn't paid" with a working CSV export link
-- Settings — payment/bank info (shown to authenticated staff only), contacts, guidelines editor, **Academic Calendar** (create academic years and semesters, marked regular or recess), **Accommodation Fees** (create semester-specific or default fees per room type)
+- Settings — payment/bank info (shown to authenticated staff only), contacts, **Academic Calendar** (create academic years and semesters, marked regular or recess), **Accommodation Fees** (create semester-specific or default fees per room type). Hostel Rules and Regulations are permanent read-only system content and live at the public Guidelines page.
 - Audit Log — filterable history of every payment verification, room change, and permission change, with who/when/before/after
 
 Verified before every handoff: full TypeScript compile, a production build, and the dev server actually serving every route — checked for real each round, not assumed.

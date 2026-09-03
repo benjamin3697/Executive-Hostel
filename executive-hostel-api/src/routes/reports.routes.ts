@@ -63,8 +63,11 @@ reportsRouter.get("/occupancy", async (_req, res) => {
 // GET /reports/financial (docs Section 42)
 // ---------------------------------------------------------------------------
 reportsRouter.get("/financial", async (_req, res) => {
-  const activeStudents = await prisma.student.findMany({ where: { status: "active" } });
-  const summaries: BalanceSummary[] = await Promise.all(activeStudents.map((s: { id: string }) => getStudentBalanceSummary(s.id)));
+  // Financial accommodation totals are resident totals. Applicants and
+  // active students without a room have no applicable fee and must not make
+  // the people count disagree with the money totals.
+  const residents = await prisma.student.findMany({ where: { status: "active", currentRoomId: { not: null }, user: { role: "student" } } });
+  const summaries: BalanceSummary[] = await Promise.all(residents.map((s: { id: string }) => getStudentBalanceSummary(s.id)));
 
   const totals = summaries.reduce(
     (acc: { expected: number; verified: number; pending: number; outstanding: number }, s: BalanceSummary) => ({
@@ -81,7 +84,7 @@ reportsRouter.get("/financial", async (_req, res) => {
     fullyPaidCount: summaries.filter((s: BalanceSummary) => s.status === "fully_paid").length,
     partiallyPaidCount: summaries.filter((s: BalanceSummary) => s.status === "partially_paid").length,
     outstandingCount: summaries.filter((s: BalanceSummary) => s.status === "outstanding").length,
-    activeStudentCount: activeStudents.length,
+    activeStudentCount: residents.length,
   });
 });
 
@@ -91,7 +94,7 @@ reportsRouter.get("/financial", async (_req, res) => {
 // ---------------------------------------------------------------------------
 reportsRouter.get("/outstanding", async (req, res) => {
   const students = await prisma.student.findMany({
-    where: { status: "active" },
+    where: { status: "active", user: { role: "student" } },
     include: { currentRoom: { include: { section: true, roomType: true } } },
   });
 
@@ -126,7 +129,7 @@ reportsRouter.get("/outstanding", async (req, res) => {
 // GET /reports/students (docs Section 42)
 // ---------------------------------------------------------------------------
 reportsRouter.get("/students", async (_req, res) => {
-  const students = await prisma.student.findMany({ include: { currentRoom: { include: { section: true } } } });
+  const students = await prisma.student.findMany({ where: { user: { role: "student" } }, include: { currentRoom: { include: { section: true } } } });
 
   const byYear: Record<string, number> = {};
   const byCourse: Record<string, number> = {};

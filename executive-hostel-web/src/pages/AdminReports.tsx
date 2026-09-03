@@ -45,8 +45,8 @@ export default function AdminReports() {
         <StatCard label="Verified" value={fmt(financial.verified)} />
         <StatCard label="Pending Verification" value={fmt(financial.pending)} />
         <StatCard label="Outstanding" value={fmt(financial.outstanding)} />
-        <StatCard label="Fully Paid Students" value={financial.fullyPaidCount} />
-        <StatCard label="Partially Paid" value={financial.partiallyPaidCount} />
+        <StatCard label="Fully Paid Residents" value={financial.fullyPaidCount} />
+        <StatCard label="Partially Paid Residents" value={financial.partiallyPaidCount} />
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>

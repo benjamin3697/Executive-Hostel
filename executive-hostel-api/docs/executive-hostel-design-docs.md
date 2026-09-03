@@ -515,7 +515,7 @@ ADMINISTRATOR
 ├── /admin/announcements/new
 ├── /admin/maintenance
 ├── /admin/reports
-├── /admin/settings (fees, bank info, contacts, guidelines editor)
+├── /admin/settings (fees, bank info, contacts; permanent rules are read-only)
 └── /admin/audit-log
 
 LANDLADY/LANDLORD

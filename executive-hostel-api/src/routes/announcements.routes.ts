@@ -14,6 +14,7 @@ announcementsRouter.use(authenticate);
 // never /payments, /students, etc., since those have their own requireRole
 // checks that don't list "chairperson".
 const canPublish = requireRole("administrator", "landlady", "chairperson");
+const canManage = requireRole("administrator", "landlady");
 
 const createSchema = z.object({
   title: z.string().min(2).max(200),
@@ -81,6 +82,46 @@ announcementsRouter.post("/", canPublish, async (req: AuthenticatedRequest, res)
   }
 
   res.status(201).json(announcement);
+});
+
+const updateSchema = z.object({
+  title: z.string().min(2).max(200).optional(),
+  message: z.string().min(2).max(5000).optional(),
+  priority: z.enum(["normal", "important", "urgent"]).optional(),
+  audienceType: z.enum(["all", "section", "room", "year", "group"]).optional(),
+  audienceRef: z.string().max(100).optional(),
+  attachmentUrl: z.string().url().optional(),
+});
+
+announcementsRouter.patch("/:id", canManage, async (req: AuthenticatedRequest, res) => {
+  const parsed = updateSchema.safeParse(req.body);
+  if (!parsed.success || Object.keys(parsed.data).length === 0) {
+    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.success ? "Provide at least one field to update." : parsed.error.issues[0]?.message ?? "Invalid input." } });
+  }
+  if (parsed.data.audienceType && parsed.data.audienceType !== "all" && !parsed.data.audienceRef) {
+    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "audienceRef is required for targeted announcements." } });
+  }
+  const existing = await prisma.announcement.findUnique({ where: { id: req.params.id } });
+  if (!existing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Announcement not found." } });
+
+  const announcement = await prisma.announcement.update({ where: { id: existing.id }, data: parsed.data });
+  await recordAudit({
+    actorId: req.user!.id, action: "announcement.updated", entityType: "Announcement", entityId: announcement.id,
+    previousValue: { title: existing.title, message: existing.message, priority: existing.priority, audienceType: existing.audienceType, audienceRef: existing.audienceRef },
+    newValue: parsed.data,
+  });
+  res.json(announcement);
+});
+
+announcementsRouter.delete("/:id", canManage, async (req: AuthenticatedRequest, res) => {
+  const existing = await prisma.announcement.findUnique({ where: { id: req.params.id } });
+  if (!existing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Announcement not found." } });
+  await prisma.announcement.delete({ where: { id: existing.id } });
+  await recordAudit({
+    actorId: req.user!.id, action: "announcement.deleted", entityType: "Announcement", entityId: existing.id,
+    previousValue: { title: existing.title, message: existing.message, priority: existing.priority, audienceType: existing.audienceType, audienceRef: existing.audienceRef },
+  });
+  res.status(204).send();
 });
 
 // ---------------------------------------------------------------------------

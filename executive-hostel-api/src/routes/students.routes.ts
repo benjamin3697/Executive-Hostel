@@ -39,6 +39,7 @@ studentsRouter.get("/", requireRole("administrator", "landlady"), async (req, re
 
   const where = {
     status,
+    user: { role: "student" as const },
     yearOfStudy: year,
     semesterId,
     course: course ? { contains: course, mode: "insensitive" as const } : undefined,

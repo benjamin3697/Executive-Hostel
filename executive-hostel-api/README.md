@@ -185,7 +185,7 @@ What wasn't verified end-to-end: an actual live HTTP request through the running
 
 ## What's built now (summary)
 
-Phases 1–13 are complete: auth (with account lockout + password reset), profiles, rooms & allocation, fees, payment submission & verification, student dashboard, applications (with automatic email/SMS credential delivery), announcements, maintenance, reports, settings/contacts/guidelines, audit log, and notifications.
+Phases 1–13 are complete: auth (with account lockout + password reset), profiles, rooms & allocation, fees, payment submission & verification, student dashboard, applications (with automatic email/SMS credential delivery), announcements, maintenance, reports, settings/contacts, permanent read-only guidelines, audit log, and notifications.
 
 ## What's genuinely left
 
@@ -225,7 +225,7 @@ The uploaded PDF's undertaking form has a digital equivalent: `Application.terms
 No hard schema enforcement (no gender field is collected) — this is reflected as copy on the public Home and Apply pages ("boys' hostel for male students of Soroti University"), which is the appropriate level of enforcement for something that's a facility-level fact, not a data validation rule.
 
 ### Real hostel guidelines seeded
-`prisma/seed.ts` now seeds all 15 rule categories transcribed from the hostel's actual uploaded Rules & Regulations PDF (previously the Guidelines table was empty, per docs Section 41's "don't invent rules, provide an editor for the real ones" — these ARE the real ones now). The source PDF was scanned/OCR'd with some page-rotation artifacts; the transcription was cleaned up for readability but is worth a spot-check against the original before relying on it for a disciplinary decision.
+`prisma/seed.ts` seeds all 15 rule categories transcribed from the hostel's actual uploaded Rules & Regulations PDF. The rules are permanent system content: `GET /api/v1/guidelines` is publicly readable, while admin write endpoints are intentionally not exposed. The source PDF was scanned/OCR'd with some page-rotation artifacts; the transcription was cleaned up for readability but is worth a spot-check against the original before relying on it for a disciplinary decision.
 
 ### Removed number-input spinners
 Money fields (payment amount) now use a numeric text input instead of `type="number"`, and a global CSS rule (`theme.css`) hides the increment/decrement spinner buttons on any remaining native number inputs project-wide.

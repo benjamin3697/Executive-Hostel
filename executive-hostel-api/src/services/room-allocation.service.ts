@@ -48,8 +48,14 @@ export async function assignRoom(params: {
       throw new AllocationError("ROOM_NOT_VACANT", "Room already has an active occupant.");
     }
 
-    const student = await tx.student.findUnique({ where: { id: studentId } });
+    const student = await tx.student.findUnique({
+      where: { id: studentId },
+      include: { user: { select: { role: true } } },
+    });
     if (!student) throw new AllocationError("STUDENT_NOT_FOUND", "Student does not exist.");
+    if (student.user.role !== "student") {
+      throw new AllocationError("STAFF_CANNOT_BE_ASSIGNED", "Only student accounts can be assigned a room.");
+    }
     if (student.currentRoomId) {
       throw new AllocationError("STUDENT_ALREADY_ASSIGNED", "This student already has an active room. Check them out of it first.");
     }
