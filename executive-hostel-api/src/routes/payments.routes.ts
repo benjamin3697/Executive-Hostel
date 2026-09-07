@@ -52,9 +52,9 @@ paymentsRouter.get("/me", requireRole("student"), async (req: AuthenticatedReque
 });
 
 // ---------------------------------------------------------------------------
-// evidence upload: get a presigned POST so the student's browser uploads
+// evidence upload: get a presigned PUT URL so the student's browser uploads
 // straight to the bucket (docs Section 13, 58) - the file never touches
-// this server. Call this first, upload the file, then POST /payments with
+// this server. Call this first, upload the file with PUT, then POST /payments with
 // the returned `key` in the evidence list.
 // ---------------------------------------------------------------------------
 const uploadUrlSchema = z.object({ fileType: z.enum(["image", "pdf"]) });

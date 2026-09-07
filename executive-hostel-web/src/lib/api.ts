@@ -214,7 +214,7 @@ export const api = {
   correctPayment: (id: string, reason: string, newAmount: number) =>
     apiFetch(`/api/v1/payments/${id}/correct`, { method: "POST", body: { reason, newAmount } }),
   evidenceUploadUrl: (fileType: "image" | "pdf") =>
-    apiFetch<{ key: string; url: string; fields: Record<string, string>; allowedContentTypes: string[]; maxBytes: number }>(
+    apiFetch<{ key: string; url: string; allowedContentTypes: string[]; maxBytes: number }>(
       "/api/v1/payments/evidence-upload-url", { method: "POST", body: { fileType } }
     ),
   submitPayment: (payload: {
@@ -286,17 +286,18 @@ export const api = {
 };
 
 /**
- * Uploads a file directly to the storage bucket using a presigned POST
+ * Uploads a file directly to the storage bucket using a presigned PUT URL
  * (see backend src/lib/storage.ts) - the file bytes never pass through our
  * API server. Call this, then pass the returned key into submitPayment's
  * evidence array or a maintenance request's imageUrl.
  */
 export async function uploadEvidenceFile(file: File, fileType: "image" | "pdf"): Promise<string> {
-  const { key, url, fields } = await api.evidenceUploadUrl(fileType);
-  const formData = new FormData();
-  for (const [k, v] of Object.entries(fields)) formData.append(k, v);
-  formData.append("file", file); // must be appended last for S3-compatible presigned POST
-  const res = await fetch(url, { method: "POST", body: formData });
+  const { key, url } = await api.evidenceUploadUrl(fileType);
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
   if (!res.ok) throw new Error("File upload failed. Check file type/size and try again.");
   return key;
 }

@@ -1,5 +1,4 @@
-import { S3Client, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { S3Client, GetObjectCommand, DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import { env } from "./env";
@@ -25,14 +24,12 @@ const ALLOWED_EVIDENCE_TYPES = {
 export type EvidenceFileType = keyof typeof ALLOWED_EVIDENCE_TYPES;
 
 /**
- * Generates a presigned POST policy so the student's browser uploads
+ * Generates a presigned PUT URL so the student's browser uploads
  * directly to the bucket - the file's bytes never touch our API server.
- * The policy itself enforces the content-type and size limit; a request
- * that doesn't match gets rejected by the bucket, not by our code, so
- * there's no way to bypass the limit by calling the API differently.
+ * Uses PUT instead of POST, which Backblaze B2's S3 API properly supports.
  *
  * Returns the object key (store this on PaymentEvidence.fileUrl) plus the
- * { url, fields } the client POSTs the multipart form to.
+ * signed URL the client PUTs the file to.
  */
 export async function createEvidenceUploadPost(params: { studentId: string; fileType: EvidenceFileType }) {
   const { studentId, fileType } = params;
@@ -40,22 +37,18 @@ export async function createEvidenceUploadPost(params: { studentId: string; file
   const extension = fileType === "pdf" ? "pdf" : "jpg";
   const key = `payment-evidence/${studentId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
-  const { url, fields } = await createPresignedPost(s3, {
-    Bucket: env.s3Bucket,
-    Key: key,
-    Conditions: [
-      ["content-length-range", 1, env.s3MaxUploadBytes],
-      ["starts-with", "$Content-Type", fileType === "pdf" ? "application/pdf" : "image/"],
-    ],
-    Fields: {
-      // Client must set this Content-Type field to one of allowedContentTypes;
-      // the condition above only checks the prefix, so the client-facing docs
-      // should still tell the student which exact types are accepted.
-    },
-    Expires: 300, // presigned policy is valid for 5 minutes
-  });
+  const contentType = fileType === "pdf" ? "application/pdf" : "image/jpeg";
+  
+  const url = await getSignedUrl(s3, 
+    new PutObjectCommand({
+      Bucket: env.s3Bucket,
+      Key: key,
+      ContentType: contentType,
+    }),
+    { expiresIn: 300 } // presigned URL valid for 5 minutes
+  );
 
-  return { key, url, fields, allowedContentTypes, maxBytes: env.s3MaxUploadBytes };
+  return { key, url, allowedContentTypes, maxBytes: env.s3MaxUploadBytes };
 }
 
 /**
