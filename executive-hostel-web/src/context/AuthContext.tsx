@@ -4,7 +4,7 @@ import { api, getStoredAuth, storeAuth, clearAuth } from "../lib/api";
 interface AuthState {
   isAuthenticated: boolean;
   role: string | null;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -13,9 +13,9 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<string | null>(() => getStoredAuth().role);
 
-  const login = useCallback(async (identifier: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string, rememberMe = false) => {
     const result = await api.login(identifier, password);
-    storeAuth(result.accessToken, result.refreshToken, result.role);
+    storeAuth(result.accessToken, result.refreshToken, result.role, rememberMe);
     setRole(result.role);
   }, []);
 

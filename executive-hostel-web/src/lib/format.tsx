@@ -9,6 +9,7 @@ export const STATUS_COLORS: Record<string, { bg: string; fg: string }> = {
   outstanding: { bg: "var(--color-danger-soft)", fg: "var(--color-danger)" },
   rejected: { bg: "var(--color-danger-soft)", fg: "var(--color-danger)" },
   no_active_accommodation: { bg: "#EDEDED", fg: "#888" },
+  assigned: { bg: "var(--color-primary-soft)", fg: "var(--color-primary)" },
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {

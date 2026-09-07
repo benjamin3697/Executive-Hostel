@@ -8,6 +8,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +17,7 @@ export default function Login() {
     setError(null);
     setLoading(true);
     try {
-      await login(identifier, password);
+      await login(identifier, password, rememberMe);
       navigate("/");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -39,9 +40,10 @@ export default function Login() {
         </div>
         <div style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>Soroti University</div>
 
-        <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Email or phone</label>
+        <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Email</label>
         <input
           className="input"
+          type="email"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           placeholder="you@example.com"
@@ -63,6 +65,11 @@ export default function Login() {
         <Link to="/forgot-password" style={{ fontSize: 12.5, color: "var(--color-primary)", display: "block", marginBottom: 16 }}>
           Forgot password?
         </Link>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 16, cursor: "pointer" }}>
+          <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+          Keep me signed in on this device
+        </label>
 
         {error && (
           <div style={{ background: "var(--color-danger-soft)", color: "var(--color-danger)", borderRadius: 8, padding: "10px 12px", fontSize: 13, marginBottom: 14 }}>

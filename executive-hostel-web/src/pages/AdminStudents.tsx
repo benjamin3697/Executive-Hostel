@@ -156,6 +156,10 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
   no_active_accommodation: "No Room Yet",
 };
 
+function residencyStatusLabel(student: StudentRow) {
+  return student.status === "applicant" && student.currentRoom ? "assigned" : student.status;
+}
+
 function downloadCsv(rows: StudentRow[]) {
   const headers = ["Name", "Registration Number", "Section", "Room", "Room Type", "Course", "Year", "Semester", "Fee", "Paid", "Balance", "Payment Status", "Residency Status"];
   const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
@@ -167,7 +171,7 @@ function downloadCsv(rows: StudentRow[]) {
       s.course ?? "", s.yearOfStudy?.toString() ?? "",
       s.semester ? `${s.semester.academicYear.label} ${s.semester.label}` : "",
       s.payment.fee?.toString() ?? "", s.payment.verifiedPaid.toString(), s.payment.balance?.toString() ?? "",
-      PAYMENT_STATUS_LABEL[s.payment.status] ?? s.payment.status, s.status,
+      PAYMENT_STATUS_LABEL[s.payment.status] ?? s.payment.status, residencyStatusLabel(s),
     ].map(escape).join(","));
   }
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
@@ -337,7 +341,7 @@ export default function AdminStudents() {
                   <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{fmt(s.payment.verifiedPaid)}</td>
                   <td style={{ padding: "10px 12px", whiteSpace: "nowrap", fontWeight: 600, color: s.payment.balance ? "var(--color-danger)" : "var(--color-accent)" }}>{fmt(s.payment.balance)}</td>
                   <td style={{ padding: "10px 12px" }}><StatusBadge status={s.payment.status} label={PAYMENT_STATUS_LABEL[s.payment.status] ?? s.payment.status} /></td>
-                  <td style={{ padding: "10px 12px" }}><StatusBadge status={s.status} label={s.status} /></td>
+                  <td style={{ padding: "10px 12px" }}><StatusBadge status={residencyStatusLabel(s)} label={residencyStatusLabel(s)} /></td>
                 </tr>
               ))}
             </tbody>

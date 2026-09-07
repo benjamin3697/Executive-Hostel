@@ -1,6 +1,6 @@
 import { useEffect, useState, FormEvent } from "react";
-import { Wrench } from "lucide-react";
-import { api, MaintenanceRow, ApiError } from "../lib/api";
+import { Upload, Wrench } from "lucide-react";
+import { api, uploadEvidenceFile, MaintenanceRow, ApiError } from "../lib/api";
 import { StatusBadge } from "../lib/format";
 
 const CATEGORIES = ["electricity", "water", "plumbing", "door_lock", "lighting", "furniture", "cleaning", "internet", "other"];
@@ -9,6 +9,7 @@ export default function Maintenance() {
   const [requests, setRequests] = useState<MaintenanceRow[] | null>(null);
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,8 +23,10 @@ export default function Maintenance() {
     setSubmitting(true);
     setError(null);
     try {
-      await api.submitMaintenance({ category, description });
+      const imageUrl = image ? await uploadEvidenceFile(image, "image") : undefined;
+      await api.submitMaintenance({ category, description, imageUrl });
       setDescription("");
+      setImage(null);
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to submit.");
@@ -43,9 +46,16 @@ export default function Maintenance() {
         </select>
         <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Describe the issue</label>
         <textarea className="input" rows={3} required value={description} onChange={(e) => setDescription(e.target.value)} style={{ marginBottom: 12 }} />
+        <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Photo (optional)</label>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+          style={{ marginBottom: 16, fontSize: 13 }}
+        />
         {error && <div style={{ color: "var(--color-danger)", fontSize: 13, marginBottom: 12 }}>{error}</div>}
         <button type="submit" disabled={submitting} className="btn btn-primary">
-          <Wrench size={15} /> {submitting ? "Submitting..." : "Submit Request"}
+          {submitting ? <Upload size={15} /> : <Wrench size={15} />} {submitting ? "Uploading..." : "Submit Request"}
         </button>
       </form>
 

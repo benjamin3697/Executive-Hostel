@@ -6,25 +6,41 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 const ACCESS_TOKEN_KEY = "hostel_access_token";
 const REFRESH_TOKEN_KEY = "hostel_refresh_token";
 const ROLE_KEY = "hostel_role";
+const REMEMBER_ME_KEY = "hostel_remember_me";
 
-export function getStoredAuth() {
+function readAuth(storage: Storage) {
   return {
-    accessToken: localStorage.getItem(ACCESS_TOKEN_KEY),
-    refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
-    role: localStorage.getItem(ROLE_KEY),
+    accessToken: storage.getItem(ACCESS_TOKEN_KEY),
+    refreshToken: storage.getItem(REFRESH_TOKEN_KEY),
+    role: storage.getItem(ROLE_KEY),
   };
 }
 
-export function storeAuth(accessToken: string, refreshToken: string, role: string) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  localStorage.setItem(ROLE_KEY, role);
+export function getStoredAuth() {
+  const sessionAuth = readAuth(sessionStorage);
+  if (sessionAuth.accessToken) return sessionAuth;
+  return localStorage.getItem(REMEMBER_ME_KEY) === "true" ? readAuth(localStorage) : readAuth(sessionStorage);
 }
 
-export function clearAuth() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
+export function storeAuth(accessToken: string, refreshToken: string, role: string, rememberMe = false) {
+  const storage = rememberMe ? localStorage : sessionStorage;
+  const otherStorage = rememberMe ? sessionStorage : localStorage;
+  clearAuth(otherStorage);
+  if (rememberMe) localStorage.setItem(REMEMBER_ME_KEY, "true");
+  else localStorage.removeItem(REMEMBER_ME_KEY);
+  storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  storage.setItem(ROLE_KEY, role);
+}
+
+export function clearAuth(storage?: Storage) {
+  const targets = storage ? [storage] : [localStorage, sessionStorage];
+  for (const target of targets) {
+    target.removeItem(ACCESS_TOKEN_KEY);
+    target.removeItem(REFRESH_TOKEN_KEY);
+    target.removeItem(ROLE_KEY);
+    if (target === localStorage) target.removeItem(REMEMBER_ME_KEY);
+  }
 }
 
 export class ApiError extends Error {
@@ -58,7 +74,7 @@ async function refreshAccessToken(): Promise<string | null> {
         }
         const data = await res.json();
         const { role } = getStoredAuth();
-        storeAuth(data.accessToken, data.refreshToken, role ?? "");
+        storeAuth(data.accessToken, data.refreshToken, role ?? "", localStorage.getItem(REMEMBER_ME_KEY) === "true");
         return data.accessToken as string;
       })
       .finally(() => {
