@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
 import { requireRole, requirePermission, requireSelfOrRole } from "../middleware/authorize";
-import { createEvidenceUploadPost, getEvidenceDownloadUrl } from "../lib/storage";
+import { getEvidenceDownloadUrl } from "../lib/storage";
 import { getCurrentFeeForStudent, getStudentBalanceSummary, verifyPayment, rejectPayment, requestClarification, correctPayment, PaymentError } from "../services/payment.service";
 import { recordAudit } from "../services/audit.service";
 
@@ -52,30 +52,14 @@ paymentsRouter.get("/me", requireRole("student"), async (req: AuthenticatedReque
 });
 
 // ---------------------------------------------------------------------------
-// evidence upload: get a presigned PUT URL so the student's browser uploads
-// straight to the bucket (docs Section 13, 58) - the file never touches
-// this server. Call this first, upload the file with PUT, then POST /payments with
-// the returned `key` in the evidence list.
-// ---------------------------------------------------------------------------
-const uploadUrlSchema = z.object({ fileType: z.enum(["image", "pdf"]) });
-
-paymentsRouter.post("/evidence-upload-url", requireRole("student"), async (req: AuthenticatedRequest, res) => {
-  const parsed = uploadUrlSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "fileType must be 'image' or 'pdf'." } });
-  }
-  try {
-    const student = await requireOwnStudent(req);
-    const post = await createEvidenceUploadPost({ studentId: student.id, fileType: parsed.data.fileType });
-    res.json(post);
-  } catch (err) {
-    handlePaymentError(err, res);
-  }
-});
+// NOTE: Evidence upload is now handled directly by the frontend via Supabase Storage.
+// No presigned URL endpoint is needed. Students upload files directly to Supabase,
+// then submit the public URL to the backend.
 
 // ---------------------------------------------------------------------------
 // STEP 3 — student submits payment evidence -> Payment(status=PENDING)
 // (docs Section 13-14). Balance is NOT recalculated here - only on verify.
+// Evidence URLs are provided directly from Supabase Storage (no S3 keys).
 // ---------------------------------------------------------------------------
 const submitPaymentSchema = z.object({
   amount: z.number().positive(),
@@ -85,7 +69,7 @@ const submitPaymentSchema = z.object({
   payerName: z.string().max(150).optional(),
   remarks: z.string().max(1000).optional(),
   evidence: z.array(z.object({
-    key: z.string().min(1),
+    url: z.string().url(),
     fileType: z.enum(["image", "pdf"]),
   })).min(1, "At least one piece of payment evidence is required."),
 });
@@ -124,7 +108,7 @@ paymentsRouter.post("/", requireRole("student"), async (req: AuthenticatedReques
         status: "pending",
         previousBalance: summary.balance ?? undefined,
         evidence: {
-          create: parsed.data.evidence.map((e) => ({ fileUrl: e.key, fileType: e.fileType })),
+          create: parsed.data.evidence.map((e) => ({ fileUrl: e.url, fileType: e.fileType })),
         },
       },
       include: { evidence: true },

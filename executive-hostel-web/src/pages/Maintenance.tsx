@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import { Upload, Wrench } from "lucide-react";
-import { api, uploadEvidenceFile, MaintenanceRow, ApiError } from "../lib/api";
+import { api, MaintenanceRow, ApiError } from "../lib/api";
+import { uploadFileToSupabase } from "../lib/supabase";
 import { StatusBadge } from "../lib/format";
 
 const CATEGORIES = ["electricity", "water", "plumbing", "door_lock", "lighting", "furniture", "cleaning", "internet", "other"];
@@ -23,7 +24,7 @@ export default function Maintenance() {
     setSubmitting(true);
     setError(null);
     try {
-      const imageUrl = image ? await uploadEvidenceFile(image, "image") : undefined;
+      const imageUrl = image ? await uploadFileToSupabase(image) : undefined;
       await api.submitMaintenance({ category, description, imageUrl });
       setDescription("");
       setImage(null);

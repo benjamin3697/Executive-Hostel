@@ -213,14 +213,10 @@ export const api = {
     apiFetch(`/api/v1/payments/${id}/request-clarification`, { method: "POST", body: { message } }),
   correctPayment: (id: string, reason: string, newAmount: number) =>
     apiFetch(`/api/v1/payments/${id}/correct`, { method: "POST", body: { reason, newAmount } }),
-  evidenceUploadUrl: (fileType: "image" | "pdf") =>
-    apiFetch<{ key: string; url: string; allowedContentTypes: string[]; maxBytes: number }>(
-      "/api/v1/payments/evidence-upload-url", { method: "POST", body: { fileType } }
-    ),
-  submitPayment: (payload: {
+submitPayment: (payload: {
     amount: number; paymentMethod: string; paymentDate: string;
     transactionReference?: string; payerName?: string; remarks?: string;
-    evidence: { key: string; fileType: "image" | "pdf" }[];
+    evidence: { url: string; fileType: "image" | "pdf" }[];
   }) => apiFetch("/api/v1/payments", { method: "POST", body: payload }),
   myPayments: () => apiFetch<PaymentHistoryRow[]>("/api/v1/payments/me"),
   paymentSummary: () => apiFetch<PaymentSummary>("/api/v1/payments/me/summary"),
@@ -285,22 +281,7 @@ export const api = {
     apiFetch<{ total: number; page: number; pageSize: number; logs: AuditLogRow[] }>("/api/v1/audit-logs", { query }),
 };
 
-/**
- * Uploads a file directly to the storage bucket using a presigned PUT URL
- * (see backend src/lib/storage.ts) - the file bytes never pass through our
- * API server. Call this, then pass the returned key into submitPayment's
- * evidence array or a maintenance request's imageUrl.
- */
-export async function uploadEvidenceFile(file: File, fileType: "image" | "pdf"): Promise<string> {
-  const { key, url } = await api.evidenceUploadUrl(fileType);
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!res.ok) throw new Error("File upload failed. Check file type/size and try again.");
-  return key;
-}
+// Types and utility functions omitted - using Supabase Storage for direct uploads
 
 // ---------------------------------------------------------------------------
 // Minimal response types - expand as you build more pages. These are
