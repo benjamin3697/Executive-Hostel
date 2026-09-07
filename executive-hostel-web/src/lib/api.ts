@@ -206,6 +206,7 @@ export const api = {
     apiFetch<{ total: number; payments: Payment[] }>("/api/v1/payments", { query: { status: "pending" } }),
   allPayments: (query: { status?: string; page?: number }) =>
     apiFetch<{ total: number; payments: Payment[] }>("/api/v1/payments", { query }),
+  getPayment: (id: string) => apiFetch<Payment>(`/api/v1/payments/${id}`),
   verifyPayment: (id: string) => apiFetch(`/api/v1/payments/${id}/verify`, { method: "POST" }),
   rejectPayment: (id: string, reason: string) =>
     apiFetch(`/api/v1/payments/${id}/reject`, { method: "POST", body: { reason } }),
@@ -297,15 +298,29 @@ export interface Room {
   currentStudent?: { id: string; fullName: string; registrationNumber: string } | null;
 }
 
+export interface PaymentEvidence {
+  id: string;
+  fileUrl: string;
+  fileType: "image" | "pdf";
+  /** Short-lived signed download URL — only present on the /:id detail endpoint */
+  downloadUrl?: string;
+}
+
 export interface Payment {
   id: string;
   amount: number;
   paymentMethod: string;
   paymentDate: string;
   transactionReference?: string;
+  payerName?: string;
+  remarks?: string;
   submittedAt: string;
+  status: string;
+  rejectionReason?: string | null;
+  adminRemarks?: string | null;
   student: { fullName: string; registrationNumber: string };
   room?: { roomNumber: string; section: { name: string } } | null;
+  evidence: PaymentEvidence[];
 }
 
 export interface PaymentSummary {
