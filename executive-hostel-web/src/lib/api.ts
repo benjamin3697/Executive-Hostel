@@ -325,9 +325,16 @@ export interface Payment {
 
 export interface PaymentSummary {
   fee: number | null;
+  /** Outstanding balance from the previous semester, rolled over on enrollment. Positive = owes money, negative = credit. */
+  carriedBalance: number;
+  /** fee + carriedBalance — the actual amount the student must pay this semester. */
+  effectiveFee: number | null;
   verifiedPaid: number;
   pendingAmount: number;
+  /** Remaining balance (never negative — 0 means fully paid or over-paid). */
   balance: number | null;
+  /** Signed remaining balance — negative means the student has a credit. */
+  rawBalance: number;
   status: string;
 }
 
@@ -387,7 +394,7 @@ export interface SemesterRow {
 }
 
 export interface PaymentHistoryRow {
-  id: string; amount: number; status: string; paymentMethod: string;
+  id: string; amount: number; status: string; paymentMethod: string; transactionReference?: string | null;
   paymentDate: string; submittedAt: string; rejectionReason?: string | null; adminRemarks?: string | null;
 }
 

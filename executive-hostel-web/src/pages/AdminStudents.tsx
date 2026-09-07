@@ -94,6 +94,36 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
                   ? `${detail.semester.academicYear.label} — ${detail.semester.label}${detail.semester.type === "recess" ? " (Recess)" : ""}`
                   : <span style={{ color: "var(--color-muted)" }}>Not enrolled in a semester yet</span>}
               </div>
+
+              {/* Balance preview — shown when there is an unpaid amount that will carry over */}
+              {detail.payment && (detail.payment.carriedBalance > 0 || detail.payment.balance) && (
+                <div style={{
+                  marginBottom: 12, padding: "10px 12px", borderRadius: 8,
+                  background: "rgba(255,180,0,0.12)", border: "1px solid rgba(255,180,0,0.4)",
+                }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--color-warning)", marginBottom: 6 }}>
+                    BALANCE ROLLOVER PREVIEW
+                  </div>
+                  <div style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 3 }}>
+                    {detail.payment.carriedBalance > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ color: "var(--color-muted)" }}>Carried from last semester</span>
+                        <span style={{ fontWeight: 600 }}>{fmt(detail.payment.carriedBalance)}</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--color-muted)" }}>Current outstanding</span>
+                      <span style={{ fontWeight: 600, color: (detail.payment.balance ?? 0) > 0 ? "var(--color-danger)" : "var(--color-accent)" }}>
+                        {fmt(detail.payment.balance)}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 6 }}>
+                    When you enroll into a new semester, the current outstanding balance will be added to the new semester's fee.
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input className="input" value={course} onChange={(e) => setCourse(e.target.value)} placeholder="Course" style={{ flex: 1, minWidth: 150 }} />
                 <input className="input" value={yearOfStudy} onChange={(e) => setYearOfStudy(e.target.value.replace(/[^\d]/g, ""))} placeholder="Year" inputMode="numeric" style={{ width: 90 }} />

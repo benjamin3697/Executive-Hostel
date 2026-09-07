@@ -64,21 +64,38 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+// ─── Shared download helper (bypasses cross-origin download restriction) ──────
+async function downloadBlob(url: string, filename: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+}
+
 // ─── Single evidence file tile ─────────────────────────────────────────────────
 function EvidenceTile({ ev, onPreview }: { ev: PaymentEvidence; onPreview: (url: string) => void }) {
   // fileUrl is a public Supabase Storage URL — use it directly, no presigning needed.
   const url = ev.fileUrl;
   const isImage = ev.fileType === "image";
+  const [downloading, setDownloading] = useState(false);
 
-  function handleDownload() {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = isImage ? "payment-receipt.jpg" : "payment-receipt.pdf";
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      await downloadBlob(url, isImage ? "payment-receipt.jpg" : "payment-receipt.pdf");
+    } catch {
+      // Fallback: open in new tab if fetch fails (e.g. CORS blocked)
+      window.open(url, "_blank", "noopener,noreferrer");
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -143,10 +160,13 @@ function EvidenceTile({ ev, onPreview }: { ev: PaymentEvidence; onPreview: (url:
         <button
           className="btn btn-outline"
           onClick={handleDownload}
-          style={{ fontSize: 12, padding: "5px 10px" }}
-          title="Download this file"
+          disabled={downloading}
+          style={{ fontSize: 12, padding: "5px 10px", minWidth: 36 }}
+          title={downloading ? "Downloading…" : "Download this file"}
         >
-          <Download size={13} />
+          {downloading
+            ? <RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} />
+            : <Download size={13} />}
         </button>
       </div>
     </div>
@@ -165,6 +185,7 @@ function PaymentCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
 
   const hasEvidence = (payment.evidence?.length ?? 0) > 0;
 
@@ -176,19 +197,22 @@ function PaymentCard({
     setExpanded((prev) => !prev);
   }
 
-  function downloadAll() {
-    evidenceToShow.forEach((ev, i) => {
-      setTimeout(() => {
-        const a = document.createElement("a");
-        a.href = ev.fileUrl;
-        a.download = `payment-receipt-${i + 1}.${ev.fileType === "pdf" ? "pdf" : "jpg"}`;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }, i * 300);
-    });
+  async function downloadAll() {
+    setDownloadingAll(true);
+    try {
+      for (let i = 0; i < evidenceToShow.length; i++) {
+        const ev = evidenceToShow[i];
+        const filename = `payment-receipt-${i + 1}.${ev.fileType === "pdf" ? "pdf" : "jpg"}`;
+        try {
+          await downloadBlob(ev.fileUrl, filename);
+        } catch {
+          window.open(ev.fileUrl, "_blank", "noopener,noreferrer");
+        }
+        if (i < evidenceToShow.length - 1) await new Promise((r) => setTimeout(r, 400));
+      }
+    } finally {
+      setDownloadingAll(false);
+    }
   }
 
   return (
@@ -304,8 +328,13 @@ function PaymentCard({
                   className="btn btn-outline"
                   style={{ fontSize: 12 }}
                   onClick={downloadAll}
+                  disabled={downloadingAll}
                 >
-                  <Download size={13} /> Download All ({evidenceToShow.length} files)
+                  {downloadingAll ? (
+                    <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Downloading...</>
+                  ) : (
+                    <><Download size={13} /> Download All ({evidenceToShow.length} files)</>
+                  )}
                 </button>
               </div>
             )}

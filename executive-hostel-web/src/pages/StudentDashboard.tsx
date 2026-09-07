@@ -47,16 +47,34 @@ export default function StudentDashboard() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Total Fee", value: fmt(data.payment.fee) },
+          data.payment.carriedBalance > 0 && {
+            label: "Previous Balance",
+            value: fmt(data.payment.carriedBalance),
+            highlight: true,
+          },
+          {
+            label: data.payment.carriedBalance > 0 ? "Semester Fee" : "Total Fee",
+            value: fmt(data.payment.fee),
+          },
+          data.payment.carriedBalance > 0 && {
+            label: "Total Due This Semester",
+            value: fmt(data.payment.effectiveFee),
+            highlight: true,
+          },
           { label: "Verified Paid", value: fmt(data.payment.verifiedPaid) },
           { label: "Pending Verification", value: fmt(data.payment.pendingAmount) },
           { label: "Outstanding Balance", value: fmt(data.payment.balance) },
-        ].map((s) => (
-          <div key={s.label} className="card">
-            <div style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 600, marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{s.value}</div>
-          </div>
-        ))}
+        ]
+          .filter(Boolean)
+          .map((s) => {
+            const item = s as { label: string; value: string; highlight?: boolean };
+            return (
+              <div key={item.label} className="card" style={item.highlight ? { borderLeft: "3px solid var(--color-warning)" } : {}}>
+                <div style={{ fontSize: 11, color: item.highlight ? "var(--color-warning)" : "var(--color-muted)", fontWeight: 600, marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>{item.value}</div>
+              </div>
+            );
+          })}
       </div>
 
       <div className="card" style={{ marginBottom: 20, display: "inline-block" }}>

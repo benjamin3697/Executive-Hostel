@@ -170,12 +170,33 @@ studentsRouter.post("/enroll-bulk", requireRole("administrator", "landlady"), as
   const semester = await prisma.semester.findUnique({ where: { id: parsed.data.semesterId }, include: { academicYear: true } });
   if (!semester) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Semester not found." } });
 
-  const result = await prisma.student.updateMany({ where: { status: "active" }, data: { semesterId: semester.id } });
+  const activeStudents = await prisma.student.findMany({ where: { status: "active" } });
+  
+  let enrolledCount = 0;
+  // Process sequentially to calculate balance securely for each
+  for (const student of activeStudents) {
+    // Only process if they are changing semesters
+    if (student.semesterId === semester.id) continue;
+    
+    // Calculate old balance before switching
+    const balanceSummary = await getStudentBalanceSummary(student.id);
+    const newCarriedBalance = balanceSummary.rawBalance !== null ? balanceSummary.rawBalance : student.carriedBalance;
+
+    await prisma.student.update({ 
+      where: { id: student.id }, 
+      data: { 
+        semesterId: semester.id,
+        carriedBalance: newCarriedBalance
+      } 
+    });
+    enrolledCount++;
+  }
+
   await recordAudit({
     actorId: req.user!.id, action: "students.bulk_enrolled", entityType: "Semester", entityId: semester.id,
-    newValue: { semesterId: semester.id, semesterLabel: semester.label, academicYear: semester.academicYear.label, enrolledCount: result.count },
+    newValue: { semesterId: semester.id, semesterLabel: semester.label, academicYear: semester.academicYear.label, enrolledCount },
   });
-  res.json({ enrolledCount: result.count, semester: { id: semester.id, label: semester.label, academicYear: semester.academicYear.label } });
+  res.json({ enrolledCount, semester: { id: semester.id, label: semester.label, academicYear: semester.academicYear.label } });
 });
 
 studentsRouter.post("/:id/enroll", requireRole("administrator", "landlady"), async (req: AuthenticatedRequest, res) => {
@@ -189,9 +210,20 @@ studentsRouter.post("/:id/enroll", requireRole("administrator", "landlady"), asy
   const semester = await prisma.semester.findUnique({ where: { id: parsed.data.semesterId }, include: { academicYear: true } });
   if (!semester) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Semester not found." } });
 
+  let newCarriedBalance = student.carriedBalance;
+  if (student.semesterId !== semester.id) {
+    const balanceSummary = await getStudentBalanceSummary(student.id);
+    newCarriedBalance = balanceSummary.rawBalance !== null ? balanceSummary.rawBalance : student.carriedBalance;
+  }
+
   const updated = await prisma.student.update({
     where: { id: student.id },
-    data: { semesterId: semester.id, ...(parsed.data.course !== undefined ? { course: parsed.data.course } : {}), ...(parsed.data.yearOfStudy !== undefined ? { yearOfStudy: parsed.data.yearOfStudy } : {}) },
+    data: { 
+      semesterId: semester.id, 
+      carriedBalance: newCarriedBalance,
+      ...(parsed.data.course !== undefined ? { course: parsed.data.course } : {}), 
+      ...(parsed.data.yearOfStudy !== undefined ? { yearOfStudy: parsed.data.yearOfStudy } : {}) 
+    },
   });
 
   await recordAudit({

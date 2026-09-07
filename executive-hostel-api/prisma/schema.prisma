@@ -213,6 +213,7 @@ model Student {
   emergencyContactPhone  String?       @map("emergency_contact_phone")
   currentRoomId          String?       @unique @map("current_room_id")
   status                 StudentStatus @default(applicant)
+  carriedBalance         Decimal       @default(0) @db.Decimal(12, 2) @map("carried_balance")
   termsAcceptedAt        DateTime?     @map("terms_accepted_at")
   createdAt              DateTime      @default(now()) @map("created_at")
   updatedAt              DateTime      @updatedAt @map("updated_at")

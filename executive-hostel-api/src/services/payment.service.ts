@@ -74,7 +74,7 @@ export interface PaymentForBalance {
   amount: Decimal | number | string; // Prisma.Decimal stringifies/numbers cleanly via Number()
 }
 
-export function summarizeBalance(feeAmount: number | null, payments: PaymentForBalance[]) {
+export function summarizeBalance(feeAmount: number | null, payments: PaymentForBalance[], carriedBalance: number = 0) {
   const verifiedPaid = payments
     .filter((p) => p.status === "verified")
     .reduce((sum, p) => sum + Number(p.amount), 0);
@@ -82,15 +82,19 @@ export function summarizeBalance(feeAmount: number | null, payments: PaymentForB
     .filter((p) => p.status === "pending" || p.status === "clarification_requested")
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
-  const balance = feeAmount !== null ? Math.max(feeAmount - verifiedPaid, 0) : null;
+  const effectiveFee = feeAmount !== null ? feeAmount + carriedBalance : null;
+  // balance is strictly non-negative (what is owed)
+  const balance = effectiveFee !== null ? Math.max(effectiveFee - verifiedPaid, 0) : null;
+  // rawBalance allows negative values (credits)
+  const rawBalance = effectiveFee !== null ? effectiveFee - verifiedPaid : carriedBalance;
 
   let status: string;
-  if (feeAmount === null) status = "no_active_accommodation";
-  else if (verifiedPaid >= feeAmount) status = "fully_paid";
+  if (feeAmount === null && carriedBalance === 0) status = "no_active_accommodation";
+  else if (effectiveFee !== null && verifiedPaid >= effectiveFee) status = "fully_paid";
   else if (verifiedPaid > 0) status = "partially_paid";
   else status = "outstanding";
 
-  return { fee: feeAmount, verifiedPaid, pendingAmount, balance, status };
+  return { fee: feeAmount, carriedBalance, effectiveFee, verifiedPaid, pendingAmount, balance, rawBalance, status };
 }
 
 /**
@@ -111,13 +115,14 @@ export function summarizeBalance(feeAmount: number | null, payments: PaymentForB
  * behavior, since there's no semester to scope payments to yet.
  */
 export async function getStudentBalanceSummary(studentId: string) {
-  const student = await prisma.student.findUnique({ where: { id: studentId }, select: { semesterId: true } });
+  const student = await prisma.student.findUnique({ where: { id: studentId }, select: { semesterId: true, carriedBalance: true } });
   const fee = await getCurrentFeeForStudent(studentId);
   const payments = await prisma.payment.findMany({
     where: student?.semesterId ? { studentId, semesterId: student.semesterId } : { studentId },
   });
   const feeAmount = fee ? Number(fee.amount) : null;
-  return summarizeBalance(feeAmount, payments);
+  const carriedBalance = student ? Number(student.carriedBalance) : 0;
+  return summarizeBalance(feeAmount, payments, carriedBalance);
 }
 
 /**
