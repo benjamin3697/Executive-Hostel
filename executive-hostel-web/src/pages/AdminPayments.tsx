@@ -66,7 +66,8 @@ function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
 
 // ─── Single evidence file tile ─────────────────────────────────────────────────
 function EvidenceTile({ ev, onPreview }: { ev: PaymentEvidence; onPreview: (url: string) => void }) {
-  const url = ev.downloadUrl ?? ev.fileUrl;
+  // fileUrl is a public Supabase Storage URL — use it directly, no presigning needed.
+  const url = ev.fileUrl;
   const isImage = ev.fileType === "image";
 
   function handleDownload() {
@@ -163,38 +164,23 @@ function PaymentCard({
   onClarify: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [detailEvidence, setDetailEvidence] = useState<PaymentEvidence[] | null>(null);
-  const [loadingEvidence, setLoadingEvidence] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const hasEvidence = (payment.evidence?.length ?? 0) > 0;
 
-  async function toggleEvidence() {
-    if (expanded) { setExpanded(false); return; }
-    setExpanded(true);
-    if (!detailEvidence) {
-      setLoadingEvidence(true);
-      try {
-        // The /:id endpoint returns evidence with short-lived signed downloadUrls
-        const detail = await api.getPayment(payment.id);
-        setDetailEvidence(detail.evidence ?? []);
-      } catch {
-        // Fall back to the URLs we already have from the list endpoint
-        setDetailEvidence(payment.evidence ?? []);
-      } finally {
-        setLoadingEvidence(false);
-      }
-    }
-  }
+  // Files are stored in Supabase Storage as public URLs — no presigning needed.
+  // We already have everything we need from the list response.
+  const evidenceToShow = payment.evidence ?? [];
 
-  const evidenceToShow = detailEvidence ?? payment.evidence ?? [];
+  function toggleEvidence() {
+    setExpanded((prev) => !prev);
+  }
 
   function downloadAll() {
     evidenceToShow.forEach((ev, i) => {
-      const url = ev.downloadUrl ?? ev.fileUrl;
       setTimeout(() => {
         const a = document.createElement("a");
-        a.href = url;
+        a.href = ev.fileUrl;
         a.download = `payment-receipt-${i + 1}.${ev.fileType === "pdf" ? "pdf" : "jpg"}`;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
@@ -298,12 +284,7 @@ function PaymentCard({
               <ImageIcon size={12} /> Payment Evidence / Receipts
             </div>
 
-            {loadingEvidence ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--color-muted)", fontSize: 13, padding: "8px 0" }}>
-                <RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} />
-                Loading evidence files…
-              </div>
-            ) : evidenceToShow.length === 0 ? (
+            {evidenceToShow.length === 0 ? (
               <div style={{ color: "var(--color-muted)", fontSize: 13 }}>No evidence files attached to this payment.</div>
             ) : (
               <div style={{
@@ -317,7 +298,7 @@ function PaymentCard({
               </div>
             )}
 
-            {!loadingEvidence && evidenceToShow.length > 1 && (
+            {evidenceToShow.length > 1 && (
               <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
                 <button
                   className="btn btn-outline"

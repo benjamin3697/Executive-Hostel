@@ -57,8 +57,16 @@ export async function createEvidenceUploadPost(params: { studentId: string; file
  * caller's authorization check - see payments.routes.ts, which only calls
  * this after confirming the requester is the submitting student, a
  * verifying admin, or the landlady (docs Section 58).
+ *
+ * NOTE: If the stored fileUrl is already a public Supabase Storage URL
+ * (starts with http/https), it is returned unchanged — no S3 presigning
+ * needed for public buckets.
  */
 export async function getEvidenceDownloadUrl(key: string): Promise<string> {
+  // Already a full URL (e.g. Supabase public URL) — return as-is.
+  if (key.startsWith("http://") || key.startsWith("https://")) {
+    return key;
+  }
   return getSignedUrl(s3, new GetObjectCommand({ Bucket: env.s3Bucket, Key: key }), { expiresIn: 120 });
 }
 
