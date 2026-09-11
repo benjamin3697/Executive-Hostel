@@ -143,12 +143,16 @@ function SiteNav({ links, actions, menuLabel, userRole }: { links: { to: string;
           {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>
         <nav className="site-nav-links" aria-label={menuLabel}>
+          <div className="mobile-nav-head"><span>Portal menu</span><button type="button" aria-label="Close navigation" onClick={() => setMenuOpen(false)}><X size={18} aria-hidden="true" /></button></div>
           {userRole && <div className="mobile-nav-profile"><div className="mobile-nav-avatar"><Users size={20} aria-hidden="true" /></div><div><strong>{userRole.replace(/_/g, " ")}</strong><small>Executive Hostel portal</small></div></div>}
+          {!userRole && <div className="mobile-nav-profile"><div className="mobile-nav-avatar"><Building2 size={20} aria-hidden="true" /></div><div><strong>Executive Hostel</strong><small>Student accommodation in Soroti</small></div></div>}
+          <div className="mobile-nav-section-label">{userRole ? "Your workspace" : "Explore"}</div>
           {links.map((link) => {
             const Icon = NAV_ICONS[link.label as keyof typeof NAV_ICONS] ?? FileText;
             return <NavLink key={link.to} to={link.to} className={({ isActive }) => isActive ? "is-active" : undefined}><Icon size={18} aria-hidden="true" /><span>{link.label}</span>{link.label === "Applications" && <span className="mobile-nav-badge">!</span>}</NavLink>;
           })}
-          {userRole && <div className="mobile-nav-notice"><Bell size={16} aria-hidden="true" /><span>Notifications are in the bell above.</span></div>}
+          {userRole && <div className="mobile-nav-actions">{actions}</div>}
+          {userRole && <div className="mobile-nav-notice"><Bell size={16} aria-hidden="true" /><span>Stay up to date with hostel activity.</span></div>}
         </nav>
         {actions && <div className="site-nav-actions">{actions}</div>}
       </div>

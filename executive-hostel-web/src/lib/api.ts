@@ -395,7 +395,8 @@ export interface SemesterRow {
 
 export interface PaymentHistoryRow {
   id: string; amount: number; status: string; paymentMethod: string; transactionReference?: string | null;
-  paymentDate: string; submittedAt: string; rejectionReason?: string | null; adminRemarks?: string | null;
+  paymentDate: string; submittedAt: string; verifiedAt?: string | null; rejectionReason?: string | null; adminRemarks?: string | null;
+  evidence?: PaymentEvidence[];
 }
 
 export interface ApplicationRow {

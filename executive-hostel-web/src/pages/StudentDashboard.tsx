@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { AlertTriangle, ArrowRight, DoorOpen, Wrench } from "lucide-react";
 import { api, StudentDashboard as DashboardData, ApiError } from "../lib/api";
 import { EmptyState, ErrorState, LoadingState, PageContainer, PageHeader } from "../components/SiteUI";
+import { formatUGX } from "../lib/format";
 
-const fmt = (n: number | null) => (n === null ? "—" : "UGX " + n.toLocaleString());
+const fmt = (n: number | null) => (n === null ? "—" : formatUGX(Number(n) || 0));
 
 const STATUS_LABEL: Record<string, string> = {
   fully_paid: "Fully Paid",
@@ -27,6 +28,9 @@ export default function StudentDashboard() {
   if (!data) return <PageContainer><LoadingState label="Loading your dashboard" /></PageContainer>;
 
   const paymentNeedsAttention = data.payment.balance !== null && data.payment.balance > 0;
+  const totalFee = Number(data.payment.effectiveFee ?? data.payment.fee) || 0;
+  const paidProgress = totalFee > 0 ? Math.min(100, Math.max(0, Math.round((Number(data.payment.verifiedPaid) || 0) / totalFee * 100))) : 0;
+  const statusTone = data.payment.status === "fully_paid" ? "success" : data.payment.status === "partially_paid" ? "warning" : "danger";
   const paymentSummary = [
     data.payment.carriedBalance > 0 && { label: "Previous balance", value: fmt(data.payment.carriedBalance), tone: "warning" },
     { label: data.payment.carriedBalance > 0 ? "Semester fee" : "Total fee", value: fmt(data.payment.fee) },
@@ -61,6 +65,8 @@ export default function StudentDashboard() {
           <div className={`dashboard-status-icon ${paymentNeedsAttention ? "is-warning" : "is-success"}`} aria-hidden="true">{paymentNeedsAttention ? "!" : "✓"}</div>
           <h2>{STATUS_LABEL[data.payment.status] ?? data.payment.status}</h2>
           <p>{paymentNeedsAttention ? "There is an outstanding balance on your account." : "Your account is up to date."}</p>
+          <span className={`payment-status-badge payment-status-${statusTone}`}>{STATUS_LABEL[data.payment.status] ?? "Unpaid / Overdue"}</span>
+          <div className="dashboard-payment-progress"><div className="payment-progress-label"><span>{paidProgress}% paid</span><strong>{formatUGX(Number(data.payment.verifiedPaid) || 0)}</strong></div><div className="payment-progress-track"><div className={`payment-progress-fill payment-progress-${statusTone}`} style={{ width: `${paidProgress}%` }} /></div></div>
           <Link to="/payments/history" className="text-link">View payment history <ArrowRight size={15} aria-hidden="true" /></Link>
         </section>
       </div>

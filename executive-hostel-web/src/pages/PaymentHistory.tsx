@@ -5,7 +5,7 @@ import {
   TrendingUp, Wallet, AlertTriangle,
 } from "lucide-react";
 import { api, PaymentHistoryRow, PaymentSummary, ApiError } from "../lib/api";
-import { fmt } from "../lib/format";
+import { fmt, formatUGX } from "../lib/format";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -31,6 +31,21 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-UG", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function numericAmount(value: number | string | null | undefined) {
+  return Number(value) || 0;
+}
+
+function paymentProgress(verifiedPaid: number, totalFee: number | null) {
+  if (!totalFee || totalFee <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((verifiedPaid / totalFee) * 100)));
+}
+
+function overallPaymentStatus(summary: PaymentSummary) {
+  if (summary.status === "fully_paid") return { label: "Fully Paid", tone: "success" };
+  if (summary.status === "partially_paid") return { label: "Partially Paid", tone: "warning" };
+  return { label: "Unpaid / Overdue", tone: "danger" };
+}
+
 // ── Balance Banner ────────────────────────────────────────────────────────────
 function BalanceBanner({ summary }: { summary: PaymentSummary }) {
   const isFullyPaid  = summary.status === "fully_paid";
@@ -38,6 +53,8 @@ function BalanceBanner({ summary }: { summary: PaymentSummary }) {
 
   const accentColor = isFullyPaid ? "var(--color-accent)" : isOutstanding ? "var(--color-danger)" : "var(--color-warning)";
   const bgColor     = isFullyPaid ? "rgba(34,197,94,0.08)"  : isOutstanding ? "rgba(239,68,68,0.08)"  : "rgba(245,158,11,0.08)";
+  const progress = paymentProgress(numericAmount(summary.verifiedPaid), summary.effectiveFee ?? summary.fee);
+  const status = overallPaymentStatus(summary);
 
   return (
     <div style={{
@@ -60,6 +77,7 @@ function BalanceBanner({ summary }: { summary: PaymentSummary }) {
         <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2 }}>
           {isFullyPaid ? "No balance due" : `${fmt(summary.balance)} remaining`}
         </div>
+        <span className={`payment-status-badge payment-status-${status.tone}`}>{status.label}</span>
         {summary.carriedBalance > 0 && (
           <div style={{ fontSize: 12, color: "var(--color-warning)", marginTop: 4 }}>
             Includes {fmt(summary.carriedBalance)} carried over from previous semester
@@ -80,6 +98,7 @@ function BalanceBanner({ summary }: { summary: PaymentSummary }) {
           </div>
         ))}
       </div>
+      <div className="payment-progress-wrap"><div className="payment-progress-label"><span>Paid progress</span><strong>{progress}%</strong></div><div className="payment-progress-track"><div className={`payment-progress-fill payment-progress-${status.tone}`} style={{ width: `${progress}%` }} /></div></div>
     </div>
   );
 }
@@ -89,7 +108,7 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
   const [open, setOpen] = useState(false);
   const sm = statusMeta(p.status);
   const mm = methodMeta(p.paymentMethod);
-  const hasDetail = p.rejectionReason || p.adminRemarks || p.transactionReference;
+  const hasDetail = p.rejectionReason || p.adminRemarks || p.transactionReference || p.verifiedAt || (p.evidence?.length ?? 0) > 0;
 
   return (
     <div className="card" style={{ padding: 0, overflow: "hidden", transition: "box-shadow 0.15s" }}>
@@ -182,6 +201,9 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
               Admin note: {p.adminRemarks}
             </div>
           )}
+          {p.verifiedAt && <div style={{ fontSize: 12.5, color: "var(--color-muted)" }}>Verified: <strong style={{ color: "var(--color-text)" }}>{fmtDate(p.verifiedAt)}</strong></div>}
+          {(p.evidence?.length ?? 0) > 0 && <div className="payment-evidence-list"><strong>Receipt uploads</strong>{p.evidence?.map((evidence) => <a key={evidence.id} href={evidence.downloadUrl ?? evidence.fileUrl} target="_blank" rel="noreferrer" className="receipt-link"><Receipt size={14} /> {evidence.fileType === "pdf" ? "View PDF receipt" : "Preview receipt"}</a>)}</div>}
+          {p.status === "verified" && p.evidence?.[0] && <a className="btn btn-primary receipt-download" href={p.evidence[0].downloadUrl ?? p.evidence[0].fileUrl} target="_blank" rel="noreferrer"><Receipt size={14} /> Download Official Receipt</a>}
         </div>
       )}
     </div>
@@ -212,8 +234,9 @@ export default function PaymentHistory() {
   const filtered = payments?.filter(p => filter === "all" || p.status === filter) ?? [];
 
   // Summary totals
-  const totalVerified  = payments?.filter(p => p.status === "verified").reduce((s, p) => s + p.amount, 0) ?? 0;
-  const totalPending   = payments?.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0) ?? 0;
+  const totalVerified = payments?.filter(p => p.status === "verified").reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) ?? 0;
+  const totalPending = payments?.filter(p => p.status === "pending").reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) ?? 0;
+  const progress = summary ? paymentProgress(totalVerified, summary.effectiveFee ?? summary.fee) : 0;
 
   const FILTERS: { key: typeof filter; label: string }[] = [
     { key: "all",                    label: "All" },
@@ -249,8 +272,8 @@ export default function PaymentHistory() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
             { label: "Total Submitted",   value: payments.length,       icon: <Receipt     size={16} />, color: "var(--color-primary)" },
-            { label: "Verified Amount",   value: fmt(totalVerified),    icon: <TrendingUp  size={16} />, color: "var(--color-accent)"  },
-            { label: "Pending Amount",    value: fmt(totalPending),     icon: <Clock       size={16} />, color: "var(--color-warning)" },
+            { label: "Verified Amount",   value: formatUGX(totalVerified), icon: <TrendingUp  size={16} />, color: "var(--color-accent)"  },
+            { label: "Pending Amount",    value: formatUGX(totalPending),  icon: <Clock       size={16} />, color: "var(--color-warning)" },
           ].map(stat => (
             <div key={stat.label} className="card" style={{ padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, color: stat.color }}>
@@ -262,6 +285,7 @@ export default function PaymentHistory() {
           ))}
         </div>
       )}
+      {summary && <div className="payment-history-progress card"><div><strong>Payment progress</strong><span>{progress}% of {formatUGX(numericAmount(summary.effectiveFee ?? summary.fee))} verified</span></div><div className="payment-progress-track"><div className="payment-progress-fill payment-progress-success" style={{ width: `${progress}%` }} /></div></div>}
 
       {/* Filter Tabs */}
       {payments && payments.length > 0 && (

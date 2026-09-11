@@ -40,13 +40,14 @@ export default function Login() {
         </div>
         <div style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>Soroti University</div>
 
-        <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Email</label>
+        <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Email or phone number</label>
         <input
           className="input"
-          type="email"
+          type="text"
+          inputMode="email"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
-          placeholder="you@example.com"
+          placeholder="you@example.com or 07..."
           autoComplete="username"
           required
           style={{ marginBottom: 14 }}

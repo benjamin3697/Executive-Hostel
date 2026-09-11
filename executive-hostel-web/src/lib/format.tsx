@@ -1,4 +1,8 @@
-export const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "—" : "UGX " + n.toLocaleString());
+export const formatUGX = (amount: number) =>
+  new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 }).format(amount);
+
+export const fmt = (n: number | null | undefined) =>
+  n === null || n === undefined ? "—" : formatUGX(Number(n) || 0);
 
 export const STATUS_COLORS: Record<string, { bg: string; fg: string }> = {
   fully_paid: { bg: "var(--color-accent-soft)", fg: "var(--color-accent)" },
