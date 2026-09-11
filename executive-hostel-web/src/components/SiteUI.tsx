@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, Inbox, LoaderCircle } from "lucide-react";
 import { ReactNode } from "react";
+import BrandMark from "./BrandMark";
 
 export function PageContainer({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`page-container ${className}`}>{children}</div>;
@@ -95,7 +96,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
         <img src="/images/hostel-exterior.jpg" alt="" fetchPriority="high" decoding="async" />
         <div className="auth-visual-scrim" />
         <div className="auth-visual-content">
-          <div className="auth-visual-brand"><span className="brand-mark"><span>EH</span></span><span>Executive Hostel</span></div>
+          <div className="auth-visual-brand"><BrandMark /><span>Executive Hostel</span></div>
           <p>Comfortable, independent student living in Soroti.</p>
         </div>
       </div>
@@ -106,7 +107,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
               <div className="eyebrow">Student portal</div>
               <h1>{title}</h1>
             </div>
-            <span className="brand-mark brand-mark-compact"><span>EH</span></span>
+            <BrandMark compact />
           </div>
           {subtitle && <p className="auth-subtitle">{subtitle}</p>}
           {children}

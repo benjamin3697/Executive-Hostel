@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { DoorOpen, AlertTriangle, Wrench } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, ArrowRight, DoorOpen, Wrench } from "lucide-react";
 import { api, StudentDashboard as DashboardData, ApiError } from "../lib/api";
+import { EmptyState, ErrorState, LoadingState, PageContainer, PageHeader } from "../components/SiteUI";
 
 const fmt = (n: number | null) => (n === null ? "—" : "UGX " + n.toLocaleString());
 
@@ -21,88 +23,58 @@ export default function StudentDashboard() {
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load dashboard."));
   }, []);
 
-  if (error) return <div style={{ padding: 24, color: "var(--color-danger)" }}>{error}</div>;
-  if (!data) return <div style={{ padding: 24, color: "var(--color-muted)" }}>Loading...</div>;
+  if (error) return <PageContainer><ErrorState message={error} /></PageContainer>;
+  if (!data) return <PageContainer><LoadingState label="Loading your dashboard" /></PageContainer>;
+
+  const paymentNeedsAttention = data.payment.balance !== null && data.payment.balance > 0;
+  const paymentSummary = [
+    data.payment.carriedBalance > 0 && { label: "Previous balance", value: fmt(data.payment.carriedBalance), tone: "warning" },
+    { label: data.payment.carriedBalance > 0 ? "Semester fee" : "Total fee", value: fmt(data.payment.fee) },
+    data.payment.carriedBalance > 0 && { label: "Total due", value: fmt(data.payment.effectiveFee), tone: "warning" },
+    { label: "Verified paid", value: fmt(data.payment.verifiedPaid), tone: "success" },
+    { label: "Pending verification", value: fmt(data.payment.pendingAmount) },
+    { label: "Outstanding balance", value: fmt(data.payment.balance), tone: paymentNeedsAttention ? "danger" : "success" },
+  ].filter(Boolean) as { label: string; value: string; tone?: string }[];
 
   return (
-    <div style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
-      <h1 className="font-display" style={{ fontSize: 24, marginBottom: 20 }}>
-        Welcome, {data.student.fullName.split(" ")[0]}
-      </h1>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Student portal"
+        title={`Welcome, ${data.student.fullName.split(" ")[0]}`}
+        description="Keep track of your room, fees, announcements, and support requests in one place."
+        actions={paymentNeedsAttention ? <Link to="/payments/submit" className="btn btn-primary">Submit payment <ArrowRight size={16} aria-hidden="true" /></Link> : undefined}
+      />
 
-      <div className="card" style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 20 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--color-primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <DoorOpen size={24} color="var(--color-primary)" />
-        </div>
-        {data.accommodation ? (
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase" }}>{data.accommodation.section}</div>
-            <div className="font-display" style={{ fontSize: 20, fontWeight: 600 }}>Room {data.accommodation.roomNumber}</div>
-            <div style={{ fontSize: 13, color: "var(--color-muted)" }}>{data.accommodation.roomType} · Reg No. {data.student.registrationNumber}</div>
-          </div>
-        ) : (
-          <div style={{ fontSize: 14, color: "var(--color-muted)" }}>No room assigned yet.</div>
-        )}
+      <div className="dashboard-grid">
+        <section className="card dashboard-room-card">
+          <div className="dashboard-card-heading"><span className="eyebrow">Accommodation</span><DoorOpen size={20} aria-hidden="true" /></div>
+          {data.accommodation ? (
+            <>
+              <h2>Room {data.accommodation.roomNumber}</h2>
+              <p>{data.accommodation.roomType} · {data.accommodation.section}</p>
+              <small>Registration number: {data.student.registrationNumber}</small>
+            </>
+          ) : <EmptyState title="No room assigned yet" description="Your accommodation details will appear here once a room is assigned." icon={<DoorOpen size={22} aria-hidden="true" />} />}
+        </section>
+        <section className="card dashboard-status-card">
+          <span className="eyebrow">Payment status</span>
+          <div className={`dashboard-status-icon ${paymentNeedsAttention ? "is-warning" : "is-success"}`} aria-hidden="true">{paymentNeedsAttention ? "!" : "✓"}</div>
+          <h2>{STATUS_LABEL[data.payment.status] ?? data.payment.status}</h2>
+          <p>{paymentNeedsAttention ? "There is an outstanding balance on your account." : "Your account is up to date."}</p>
+          <Link to="/payments/history" className="text-link">View payment history <ArrowRight size={15} aria-hidden="true" /></Link>
+        </section>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
-        {[
-          data.payment.carriedBalance > 0 && {
-            label: "Previous Balance",
-            value: fmt(data.payment.carriedBalance),
-            highlight: true,
-          },
-          {
-            label: data.payment.carriedBalance > 0 ? "Semester Fee" : "Total Fee",
-            value: fmt(data.payment.fee),
-          },
-          data.payment.carriedBalance > 0 && {
-            label: "Total Due This Semester",
-            value: fmt(data.payment.effectiveFee),
-            highlight: true,
-          },
-          { label: "Verified Paid", value: fmt(data.payment.verifiedPaid) },
-          { label: "Pending Verification", value: fmt(data.payment.pendingAmount) },
-          { label: "Outstanding Balance", value: fmt(data.payment.balance) },
-        ]
-          .filter(Boolean)
-          .map((s) => {
-            const item = s as { label: string; value: string; highlight?: boolean };
-            return (
-              <div key={item.label} className="card" style={item.highlight ? { borderLeft: "3px solid var(--color-warning)" } : {}}>
-                <div style={{ fontSize: 11, color: item.highlight ? "var(--color-warning)" : "var(--color-muted)", fontWeight: 600, marginBottom: 6 }}>{item.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700 }}>{item.value}</div>
-              </div>
-            );
-          })}
-      </div>
-
-      <div className="card" style={{ marginBottom: 20, display: "inline-block" }}>
-        <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>
-          {STATUS_LABEL[data.payment.status] ?? data.payment.status}
-        </span>
-      </div>
-
-      {data.urgentAnnouncements.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          {data.urgentAnnouncements.map((a) => (
-            <div key={a.id} className="card" style={{ borderLeft: `4px solid var(--color-warning)`, marginBottom: 10, display: "flex", gap: 10 }}>
-              <AlertTriangle size={18} color="var(--color-warning)" style={{ flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <strong style={{ fontSize: 14 }}>{a.title}</strong>
-                <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "4px 0 0" }}>{a.message}</p>
-              </div>
-            </div>
-          ))}
+      <section className="dashboard-section">
+        <div className="section-heading"><div><span className="eyebrow">Account overview</span><h2>Fees at a glance</h2></div></div>
+        <div className="dashboard-metrics">
+          {paymentSummary.map((item) => <div key={item.label} className={`card metric-card ${item.tone ? `metric-${item.tone}` : ""}`}><span>{item.label}</span><strong>{item.value}</strong></div>)}
         </div>
-      )}
+      </section>
 
-      {data.openMaintenanceRequests > 0 && (
-        <div className="card" style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Wrench size={18} color="var(--color-primary)" />
-          <span style={{ fontSize: 13 }}>{data.openMaintenanceRequests} open maintenance request(s)</span>
-        </div>
-      )}
-    </div>
+      {data.urgentAnnouncements.length > 0 && <section className="dashboard-section"><div className="section-heading"><div><span className="eyebrow">Needs your attention</span><h2>Important announcements</h2></div><Link to="/announcements" className="text-link">See all <ArrowRight size={15} aria-hidden="true" /></Link></div><div className="dashboard-announcements">{data.urgentAnnouncements.map((a) => <article key={a.id} className="card announcement-item"><AlertTriangle size={19} aria-hidden="true" /><div><strong>{a.title}</strong><p>{a.message}</p></div></article>)}</div></section>}
+
+      {data.openMaintenanceRequests > 0 && <Link to="/maintenance" className="card dashboard-maintenance"><Wrench size={19} aria-hidden="true" /><span><strong>{data.openMaintenanceRequests} open maintenance request{data.openMaintenanceRequests === 1 ? "" : "s"}</strong><small>View request updates</small></span><ArrowRight size={17} aria-hidden="true" /></Link>}
+    </PageContainer>
   );
 }

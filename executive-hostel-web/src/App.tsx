@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, NavLink, useLocation, use
 import { Bell, Building2, CheckCircle2, LogOut, Menu, X } from "lucide-react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import BrandMark from "./components/BrandMark";
 import { api } from "./lib/api";
 
 const LoginPage = lazy(() => import("./pages/Login"));
@@ -56,7 +57,7 @@ const ADMIN_LINKS = [
 function RouteFallback() {
   return (
     <div className="route-fallback" role="status">
-      <div className="route-fallback-mark"><span>EH</span></div>
+      <div className="route-fallback-mark"><BrandMark /></div>
       <div className="route-fallback-line" />
       <div className="route-fallback-line route-fallback-line-short" />
       <span className="sr-only">Loading page</span>
@@ -105,7 +106,7 @@ function NotificationBell() {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link to="/" className={`site-brand ${compact ? "site-brand-compact" : ""}`} aria-label="Executive Hostel home">
-      <span className="brand-mark"><span>EH</span></span>
+      <BrandMark />
       <span className="brand-name">Executive <strong>Hostel</strong></span>
     </Link>
   );
