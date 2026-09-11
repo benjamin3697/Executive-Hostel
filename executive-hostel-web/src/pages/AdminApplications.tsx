@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { CheckCircle2, XCircle, Clock, Archive } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Archive, Phone } from "lucide-react";
 import { api, ApplicationRow, ApiError } from "../lib/api";
 import { StatusBadge } from "../lib/format";
 
@@ -50,7 +50,7 @@ export default function AdminApplications() {
   if (error) return <div style={{ padding: 24, color: "var(--color-danger)" }}>{error}</div>;
 
   return (
-    <div style={{ padding: 24, maxWidth: 640 }}>
+    <div className="page-container mobile-admin-page">
       <h1 className="font-display" style={{ fontSize: 22, marginBottom: 16 }}>Applications</h1>
 
       {approvedInfo && (
@@ -67,15 +67,15 @@ export default function AdminApplications() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+      <div className="mobile-tab-bar">
         {["submitted", "under_review", "approved", "rejected", "waitlisted"].map((s) => (
           <button
             key={s}
             onClick={() => setStatus(status === s ? undefined : s)}
-            className="btn"
+            className={`mobile-tab ${status === s ? "is-active" : ""}`}
             style={{ background: status === s ? "var(--color-primary)" : "#fff", color: status === s ? "#fff" : "var(--color-text)", borderColor: "var(--color-border)", fontSize: 12 }}
           >
-            {s.replace(/_/g, " ")}
+            <span>{s.replace(/_/g, " ")}</span><b className="mobile-tab-count">{status === s ? applications?.length ?? 0 : "-"}</b>
           </button>
         ))}
       </div>
@@ -85,9 +85,9 @@ export default function AdminApplications() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {applications?.map((a) => (
-          <div key={a.id} className="card">
+          <div key={a.id} className="card mobile-record-card">
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div>
+              <div className="mobile-record-top">
                 <div style={{ fontWeight: 700 }}>{a.fullName}</div>
                 <div style={{ fontSize: 12.5, color: "var(--color-muted)" }}>
                   {a.phone} {a.email && `· ${a.email}`} {a.course && `· ${a.course}`}
@@ -102,7 +102,8 @@ export default function AdminApplications() {
               </div>
             )}
             {(a.status === "submitted" || a.status === "under_review") && (
-              <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              <div className="mobile-record-actions">
+                <a className="btn btn-outline" href={`tel:${a.phone}`}><Phone size={14} /> Call student</a>
                 <button disabled={busyId === a.id} onClick={() => handleApprove(a.id)} className="btn btn-accent">
                   <CheckCircle2 size={14} /> Approve
                 </button>

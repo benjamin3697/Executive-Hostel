@@ -237,9 +237,9 @@ submitPayment: (payload: {
 
   // ---- Announcements ----
   announcements: () => apiFetch<AnnouncementRow[]>("/api/v1/announcements"),
-  createAnnouncement: (payload: { title: string; message: string; priority: string; audienceType: string; audienceRef?: string }) =>
+  createAnnouncement: (payload: { title: string; message: string; priority: string; audienceType: string; audienceRef?: string; pinned?: boolean }) =>
     apiFetch("/api/v1/announcements", { method: "POST", body: payload }),
-  updateAnnouncement: (id: string, payload: Partial<{ title: string; message: string; priority: string; audienceType: string; audienceRef?: string }>) =>
+  updateAnnouncement: (id: string, payload: Partial<{ title: string; message: string; priority: string; audienceType: string; audienceRef?: string; pinned?: boolean }>) =>
     apiFetch<AnnouncementRow>(`/api/v1/announcements/${id}`, { method: "PATCH", body: payload }),
   deleteAnnouncement: (id: string) => apiFetch<void>(`/api/v1/announcements/${id}`, { method: "DELETE" }),
 
@@ -405,7 +405,7 @@ export interface ApplicationRow {
 }
 
 export interface AnnouncementRow {
-  id: string; title: string; message: string; priority: string;
+  id: string; title: string; message: string; priority: string; pinned?: boolean;
   audienceType: string; publishedAt: string;
 }
 

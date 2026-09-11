@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Pin } from "lucide-react";
 import { api, AnnouncementRow, ApiError } from "../lib/api";
 
 const PRIORITY_COLOR: Record<string, string> = { normal: "var(--color-muted)", important: "var(--color-warning)", urgent: "var(--color-danger)" };
@@ -20,9 +21,9 @@ export default function Announcements() {
       {announcements?.length === 0 && <div className="card" style={{ textAlign: "center", color: "var(--color-muted)" }}>No announcements yet.</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {announcements?.map((a) => (
-          <div key={a.id} className="card" style={{ borderLeft: `4px solid ${PRIORITY_COLOR[a.priority]}` }}>
+          <div key={a.id} className={`card ${a.priority === "urgent" || a.pinned ? "urgent-announcement" : ""}`} style={{ borderLeft: `4px solid ${PRIORITY_COLOR[a.priority]}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <strong style={{ fontSize: 14 }}>{a.title}</strong>
+              <strong style={{ fontSize: 14 }}>{a.pinned && <Pin size={13} aria-label="Pinned" />} {a.title}</strong>
               <span style={{ fontSize: 10, fontWeight: 700, color: PRIORITY_COLOR[a.priority], textTransform: "uppercase" }}>{a.priority}</span>
             </div>
             <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "6px 0" }}>{a.message}</p>

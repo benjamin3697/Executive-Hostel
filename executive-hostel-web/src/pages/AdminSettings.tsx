@@ -1,4 +1,5 @@
 import { useEffect, useState, FormEvent } from "react";
+import { ChevronDown } from "lucide-react";
 import { api, ContactRow, AcademicYearRow, SemesterRow, FeeRow, ApiError } from "../lib/api";
 
 const PAYMENT_KEYS = [
@@ -112,26 +113,26 @@ export default function AdminSettings() {
   if (error) return <div style={{ padding: 24, color: "var(--color-danger)" }}>{error}</div>;
 
   return (
-    <div style={{ padding: 24, maxWidth: 560 }}>
-      <h1 className="font-display" style={{ fontSize: 22, marginBottom: 16 }}>Settings</h1>
+    <div className="page-container settings-page">
+      <div className="page-header"><div><div className="eyebrow">Administration</div><h1>Settings</h1><p>Keep payment details, contacts, academic periods, and accommodation fees organized.</p></div></div>
 
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginBottom: 10 }}>PAYMENT INFORMATION</h2>
-      <form onSubmit={handleSaveSettings} className="card" style={{ marginBottom: 24 }}>
+      <details className="card settings-section" open><summary><span>Payment information</span><ChevronDown size={17} /></summary><form onSubmit={handleSaveSettings}>
         {PAYMENT_KEYS.map(({ key, label }) => (
           <div key={key} style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>{label}</label>
             <input
               className="input"
               value={values[key] ?? ""}
+              inputMode={key === "payment_deadline" ? "numeric" : undefined}
               onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
             />
           </div>
         ))}
         {saved && <div style={{ color: "var(--color-accent)", fontSize: 13, marginBottom: 12 }}>Saved.</div>}
         <button type="submit" disabled={saving} className="btn btn-primary">{saving ? "Saving..." : "Save Payment Info"}</button>
-      </form>
+      </form></details>
 
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginBottom: 10 }}>CONTACTS</h2>
+      <details className="card settings-section" open><summary><span>Contacts</span><ChevronDown size={17} /></summary><div className="settings-section-body">
       <div className="card" style={{ marginBottom: 12 }}>
         {contacts?.map((c) => (
           <div key={c.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--color-border)", fontSize: 13 }}>
@@ -146,8 +147,9 @@ export default function AdminSettings() {
         <input className="input" placeholder="Email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} style={{ flex: "1 1 140px" }} />
         <button type="submit" className="btn btn-outline">Add Contact</button>
       </form>
+      </div></details>
 
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginTop: 24, marginBottom: 10 }}>ACADEMIC CALENDAR</h2>
+      <details className="card settings-section" open><summary><span>Academic calendar</span><ChevronDown size={17} /></summary><div className="settings-section-body">
       <p style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 12 }}>
         Create an academic year, then the semesters within it (2 regular + a recess semester, or however your calendar is structured). Enroll students into a semester from their profile on the Students page — that's what determines which fee and which payments count toward their current balance.
       </p>
@@ -178,8 +180,9 @@ export default function AdminSettings() {
         </select>
         <button type="submit" className="btn btn-outline">Add Semester</button>
       </form>
+      </div></details>
 
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-muted)", marginBottom: 10 }}>ACCOMMODATION FEES</h2>
+      <details className="card settings-section" open><summary><span>Accommodation fees</span><ChevronDown size={17} /></summary><div className="settings-section-body">
       <p style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 12 }}>
         Leaving "Semester" blank sets the default fee for that room type (used whenever no semester-specific fee exists — e.g. recess residents are charged the default until you add a recess-specific fee here).
       </p>
@@ -188,7 +191,7 @@ export default function AdminSettings() {
         {fees.map((f) => (
           <div key={f.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--color-border)", fontSize: 13 }}>
             <span>{f.roomType.name} {f.semester ? `— ${f.semester.label}` : "(default)"}</span>
-            <strong>UGX {f.amount.toLocaleString()}</strong>
+            <strong>UGX {f.amount.toLocaleString("en-UG")}</strong>
           </div>
         ))}
       </div>
@@ -213,6 +216,7 @@ export default function AdminSettings() {
         />
         <button type="submit" className="btn btn-outline">Add Fee</button>
       </form>
+      </div></details>
     </div>
   );
 }

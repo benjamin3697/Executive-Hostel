@@ -33,18 +33,18 @@ export default function AdminMaintenance() {
   if (error) return <div style={{ padding: 24, color: "var(--color-danger)" }}>{error}</div>;
 
   return (
-    <div style={{ padding: 24, maxWidth: 640 }}>
+    <div className="page-container mobile-admin-page">
       <h1 className="font-display" style={{ fontSize: 22, marginBottom: 16 }}>Maintenance Requests</h1>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div className="mobile-tab-bar">
         {STATUSES.map((s) => (
           <button
             key={s}
             onClick={() => setStatus(status === s ? undefined : s)}
-            className="btn"
+            className={`mobile-tab ${status === s ? "is-active" : ""}`}
             style={{ background: status === s ? "var(--color-primary)" : "#fff", color: status === s ? "#fff" : "var(--color-text)", borderColor: "var(--color-border)", fontSize: 12 }}
           >
-            {s.replace(/_/g, " ")}
+            <span>{s.replace(/_/g, " ")}</span><b className="mobile-tab-count">{status === s ? requests?.length ?? 0 : "-"}</b>
           </button>
         ))}
       </div>
@@ -52,7 +52,7 @@ export default function AdminMaintenance() {
       {!requests && <div style={{ color: "var(--color-muted)" }}>Loading...</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {requests?.map((r) => (
-          <div key={r.id} className="card">
+          <div key={r.id} className="card mobile-record-card">
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13, textTransform: "capitalize" }}>{r.category.replace(/_/g, " ")}</div>
@@ -63,7 +63,7 @@ export default function AdminMaintenance() {
               <StatusBadge status={r.status} label={r.status.replace(/_/g, " ")} />
             </div>
             <p style={{ fontSize: 13, margin: "8px 0" }}>{r.description}</p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="mobile-record-actions">
               {r.status === "submitted" && (
                 <button disabled={busyId === r.id} className="btn btn-outline" onClick={() => advance(r.id, "in_progress")}>Start Work</button>
               )}

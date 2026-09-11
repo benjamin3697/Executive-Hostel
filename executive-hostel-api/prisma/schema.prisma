@@ -457,6 +457,7 @@ model Announcement {
   audienceType   String               @default("all") @map("audience_type")
   audienceRef    String?              @map("audience_ref")
   attachmentUrl  String?              @map("attachment_url")
+  pinned         Boolean              @default(false)
   publishedAt    DateTime             @default(now()) @map("published_at")
 
   author User @relation(fields: [authorId], references: [id])

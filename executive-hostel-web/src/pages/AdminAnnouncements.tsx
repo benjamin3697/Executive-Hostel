@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent, useMemo } from "react";
-import { Edit3, Megaphone, Trash2, X } from "lucide-react";
+import { Edit3, Megaphone, Pin, Trash2, X } from "lucide-react";
 import { api, AnnouncementRow, Room, ApiError } from "../lib/api";
 
 const PRIORITY_COLOR: Record<string, string> = { normal: "var(--color-muted)", important: "var(--color-warning)", urgent: "var(--color-danger)" };
@@ -10,6 +10,7 @@ export default function AdminAnnouncements() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState("normal");
+  const [pinned, setPinned] = useState(false);
   const [audienceType, setAudienceType] = useState("all");
   const [sectionRef, setSectionRef] = useState("");
   const [roomRef, setRoomRef] = useState("");
@@ -53,13 +54,14 @@ export default function AdminAnnouncements() {
         audienceType === "year" ? yearRef :
         undefined;
       if (editingId) {
-        await api.updateAnnouncement(editingId, { title, message, priority, audienceType, audienceRef });
+        await api.updateAnnouncement(editingId, { title, message, priority, audienceType, audienceRef, pinned });
       } else {
-        await api.createAnnouncement({ title, message, priority, audienceType, audienceRef });
+        await api.createAnnouncement({ title, message, priority, audienceType, audienceRef, pinned });
       }
       setTitle("");
       setMessage("");
       setEditingId(null);
+      setPinned(false);
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to publish.");
@@ -73,6 +75,7 @@ export default function AdminAnnouncements() {
     setTitle(a.title);
     setMessage(a.message);
     setPriority(a.priority);
+    setPinned(Boolean(a.pinned));
     setAudienceType(a.audienceType);
     setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -151,6 +154,7 @@ export default function AdminAnnouncements() {
         )}
 
         {error && <div style={{ color: "var(--color-danger)", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+        <label className="pin-toggle" style={{ marginBottom: 12 }}><input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} /><Pin size={15} /> Pin to top for residents</label>
         <button type="submit" disabled={submitting} className="btn btn-primary">
           <Megaphone size={15} /> {submitting ? "Saving..." : editingId ? "Save changes" : "Publish"}
         </button>
@@ -159,7 +163,7 @@ export default function AdminAnnouncements() {
       {!announcements && <div style={{ color: "var(--color-muted)" }}>Loading...</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {announcements?.map((a) => (
-          <div key={a.id} className="card" style={{ borderLeft: `4px solid ${PRIORITY_COLOR[a.priority]}` }}>
+          <div key={a.id} className={`card ${a.priority === "urgent" || a.pinned ? "urgent-announcement" : ""}`} style={{ borderLeft: `4px solid ${PRIORITY_COLOR[a.priority]}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <strong style={{ fontSize: 14 }}>{a.title}</strong>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

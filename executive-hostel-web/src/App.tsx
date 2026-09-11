@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Building2, CheckCircle2, LogOut, Menu, X } from "lucide-react";
+import { Bell, Building2, CheckCircle2, ClipboardList, DoorOpen, FileText, LayoutDashboard, LogOut, Menu, Megaphone, Settings, Shield, Users, WalletCards, Wrench, X } from "lucide-react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import BrandMark from "./components/BrandMark";
@@ -53,6 +53,23 @@ const ADMIN_LINKS = [
   { to: "/admin/security", label: "Security" },
   { to: "/admin/settings", label: "Settings" },
 ];
+
+const NAV_ICONS = {
+  Dashboard: LayoutDashboard,
+  "Submit Payment": WalletCards,
+  "Payment History": FileText,
+  Announcements: Megaphone,
+  Maintenance: Wrench,
+  Profile: Users,
+  Rooms: DoorOpen,
+  Students: Users,
+  Applications: ClipboardList,
+  Payments: WalletCards,
+  Reports: FileText,
+  "Audit Log": ClipboardList,
+  Security: Shield,
+  Settings,
+};
 
 function RouteFallback() {
   return (
@@ -112,7 +129,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function SiteNav({ links, actions, menuLabel }: { links: { to: string; label: string }[]; actions?: ReactNode; menuLabel: string }) {
+function SiteNav({ links, actions, menuLabel, userRole }: { links: { to: string; label: string }[]; actions?: ReactNode; menuLabel: string; userRole?: string | null }) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -126,9 +143,12 @@ function SiteNav({ links, actions, menuLabel }: { links: { to: string; label: st
           {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>
         <nav className="site-nav-links" aria-label={menuLabel}>
-          {links.map((link) => (
-            <NavLink key={link.to} to={link.to} className={({ isActive }) => isActive ? "is-active" : undefined}>{link.label}</NavLink>
-          ))}
+          {userRole && <div className="mobile-nav-profile"><div className="mobile-nav-avatar"><Users size={20} aria-hidden="true" /></div><div><strong>{userRole.replace(/_/g, " ")}</strong><small>Executive Hostel portal</small></div></div>}
+          {links.map((link) => {
+            const Icon = NAV_ICONS[link.label as keyof typeof NAV_ICONS] ?? FileText;
+            return <NavLink key={link.to} to={link.to} className={({ isActive }) => isActive ? "is-active" : undefined}><Icon size={18} aria-hidden="true" /><span>{link.label}</span>{link.label === "Applications" && <span className="mobile-nav-badge">!</span>}</NavLink>;
+          })}
+          {userRole && <div className="mobile-nav-notice"><Bell size={16} aria-hidden="true" /><span>Notifications are in the bell above.</span></div>}
         </nav>
         {actions && <div className="site-nav-actions">{actions}</div>}
       </div>
@@ -169,6 +189,7 @@ function TopNav() {
     <SiteNav
       menuLabel="Account navigation"
       links={links}
+      userRole={role}
       actions={(
         <div className="nav-account-group">
           <NotificationBell />

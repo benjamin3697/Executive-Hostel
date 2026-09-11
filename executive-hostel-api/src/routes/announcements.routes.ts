@@ -23,6 +23,7 @@ const createSchema = z.object({
   audienceType: z.enum(["all", "section", "room", "year", "group"]).default("all"),
   audienceRef: z.string().max(100).optional(),
   attachmentUrl: z.string().url().optional(),
+  pinned: z.boolean().default(false),
 }).refine((d) => d.audienceType === "all" || !!d.audienceRef, {
   message: "audienceRef is required unless audienceType is 'all'.",
 });
@@ -91,6 +92,7 @@ const updateSchema = z.object({
   audienceType: z.enum(["all", "section", "room", "year", "group"]).optional(),
   audienceRef: z.string().max(100).optional(),
   attachmentUrl: z.string().url().optional(),
+  pinned: z.boolean().optional(),
 });
 
 announcementsRouter.patch("/:id", canManage, async (req: AuthenticatedRequest, res) => {
@@ -132,7 +134,7 @@ announcementsRouter.delete("/:id", canManage, async (req: AuthenticatedRequest, 
 announcementsRouter.get("/", async (req: AuthenticatedRequest, res) => {
   const isStaff = ["administrator", "landlady", "chairperson"].includes(req.user!.role);
   if (isStaff) {
-    const announcements = await prisma.announcement.findMany({ orderBy: { publishedAt: "desc" }, take: 100 });
+    const announcements = await prisma.announcement.findMany({ orderBy: [{ pinned: "desc" }, { publishedAt: "desc" }], take: 100 });
     return res.json(announcements);
   }
 
@@ -153,7 +155,7 @@ announcementsRouter.get("/", async (req: AuthenticatedRequest, res) => {
 
   const announcements = await prisma.announcement.findMany({
     where: { OR: orConditions },
-    orderBy: { publishedAt: "desc" },
+    orderBy: [{ pinned: "desc" }, { publishedAt: "desc" }],
     take: 50,
   });
   res.json(announcements);
