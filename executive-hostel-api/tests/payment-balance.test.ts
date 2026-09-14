@@ -8,6 +8,12 @@ describe("summarizeBalance", () => {
     expect(result.status).toBe("partially_paid");
   });
 
+  it("adds an unpaid prior-semester balance to the new semester fee", () => {
+    const result = summarizeBalance(700000, [], 250000);
+    expect(result.effectiveFee).toBe(950000);
+    expect(result.balance).toBe(950000);
+  });
+
   it("never lets a pending payment affect the balance", () => {
     const result = summarizeBalance(650000, [
       { status: "verified", amount: 400000 },

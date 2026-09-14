@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { api, ContactRow, AcademicYearRow, SemesterRow, FeeRow, ApiError } from "../lib/api";
 
 const PAYMENT_KEYS = [
@@ -95,6 +95,28 @@ export default function AdminSettings() {
     }
   }
 
+  async function handleEditYear(year: AcademicYearRow) {
+    const label = window.prompt("Academic year label", year.label)?.trim();
+    if (!label || label === year.label) return;
+    try { await api.updateAcademicYear(year.id, label); loadAll(); } catch (err) { alert(err instanceof ApiError ? err.message : "Failed to update academic year."); }
+  }
+
+  async function handleDeleteYear(year: AcademicYearRow) {
+    if (!window.confirm(`Delete academic year ${year.label}?`)) return;
+    try { await api.deleteAcademicYear(year.id); loadAll(); } catch (err) { alert(err instanceof ApiError ? err.message : "Failed to delete academic year."); }
+  }
+
+  async function handleEditSemester(semester: SemesterRow) {
+    const label = window.prompt("Semester label", semester.label)?.trim();
+    if (!label || label === semester.label) return;
+    try { await api.updateSemester(semester.id, { label }); loadAll(); } catch (err) { alert(err instanceof ApiError ? err.message : "Failed to update semester."); }
+  }
+
+  async function handleDeleteSemester(semester: SemesterRow) {
+    if (!window.confirm(`Delete ${semester.academicYear?.label ?? "this year"} — ${semester.label}?`)) return;
+    try { await api.deleteSemester(semester.id); loadAll(); } catch (err) { alert(err instanceof ApiError ? err.message : "Failed to delete semester."); }
+  }
+
   async function handleAddFee(e: FormEvent) {
     e.preventDefault();
     try {
@@ -157,9 +179,21 @@ export default function AdminSettings() {
         {academicYears.length === 0 && <div style={{ fontSize: 13, color: "var(--color-muted)" }}>No academic years yet.</div>}
         {academicYears.map((y) => (
           <div key={y.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--color-border)" }}>
-            <strong style={{ fontSize: 13 }}>{y.label}</strong>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <strong style={{ fontSize: 13 }}>{y.label}</strong>
+              <span style={{ display: "flex", gap: 5 }}>
+                <button type="button" className="icon-button" title="Edit academic year" aria-label="Edit academic year" onClick={() => handleEditYear(y)}><Pencil size={14} /></button>
+                <button type="button" className="icon-button icon-button-danger" title="Delete academic year" aria-label="Delete academic year" onClick={() => handleDeleteYear(y)}><Trash2 size={14} /></button>
+              </span>
+            </div>
             <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
-              {y.semesters.length === 0 ? "No semesters yet" : y.semesters.map((s) => `${s.label}${s.type === "recess" ? " (Recess)" : ""}`).join(", ")}
+              {y.semesters.length === 0 ? "No semesters yet" : y.semesters.map((s) => (
+                <span key={s.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, marginRight: 10 }}>
+                  {`${s.label}${s.type === "recess" ? " (Recess)" : ""}`}
+                  <button type="button" className="icon-button" title="Edit semester" aria-label="Edit semester" onClick={() => handleEditSemester(s)}><Pencil size={11} /></button>
+                  <button type="button" className="icon-button icon-button-danger" title="Delete semester" aria-label="Delete semester" onClick={() => handleDeleteSemester(s)}><Trash2 size={11} /></button>
+                </span>
+              ))}
             </div>
           </div>
         ))}

@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { X, Download } from "lucide-react";
+import { X, Download, Pencil, Trash2, Undo2 } from "lucide-react";
 import { api, StudentRow, StudentDetail, SemesterRow, Room, ApiError } from "../lib/api";
 import { StatusBadge, fmt } from "../lib/format";
+import { useAuth } from "../context/AuthContext";
 
-function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose: () => void }) {
+function StudentDetailModal({ studentId, onClose, onDeleted }: { studentId: string; onClose: () => void; onDeleted: () => void }) {
+  const { role } = useAuth();
   const [detail, setDetail] = useState<StudentDetail | null>(null);
   const [semesters, setSemesters] = useState<SemesterRow[]>([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState("");
@@ -62,6 +64,28 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
       alert(err instanceof ApiError ? err.message : "Failed to enroll.");
     } finally {
       setEnrolling(false);
+    }
+  }
+
+  async function handleUndoEnrollment() {
+    if (!window.confirm("Undo this enrollment? This is only possible when no payment or carried balance exists.")) return;
+    try {
+      await api.undoStudentEnrollment(studentId);
+      setFeedback("Enrollment undone.");
+      load();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Failed to undo enrollment.");
+    }
+  }
+
+  async function handleDeleteStudent() {
+    if (!window.confirm("Delete this student account permanently? This is only allowed when the student has no residency or financial history.")) return;
+    try {
+      await api.deleteStudent(studentId);
+      onDeleted();
+      onClose();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Failed to delete student account.");
     }
   }
 
@@ -138,6 +162,7 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
                 <button disabled={!selectedSemesterId || enrolling} onClick={handleEnroll} className="btn btn-primary" style={{ fontSize: 12.5 }}>
                   {enrolling ? "Enrolling..." : "Enroll"}
                 </button>
+                {detail.semester && <button type="button" onClick={handleUndoEnrollment} className="btn btn-outline" style={{ fontSize: 12.5 }}><Undo2 size={14} /> Undo enrollment</button>}
               </div>
               {semesters.length === 0 && (
                 <div style={{ fontSize: 11.5, color: "var(--color-muted)", marginTop: 8 }}>
@@ -146,6 +171,10 @@ function StudentDetailModal({ studentId, onClose }: { studentId: string; onClose
               )}
               {feedback && <div style={{ color: "var(--color-accent)", fontSize: 12.5, marginTop: 8 }}>{feedback}</div>}
             </div>
+
+            {role === "landlady" && <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+              <button type="button" onClick={handleDeleteStudent} className="btn btn-danger" style={{ fontSize: 12.5 }}><Trash2 size={14} /> Delete student account</button>
+            </div>}
 
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-muted)", marginBottom: 8 }}>PAYMENT HISTORY</div>
             {detail.payments.length === 0 && <div style={{ fontSize: 13, color: "var(--color-muted)" }}>No payments submitted yet.</div>}
@@ -380,7 +409,7 @@ export default function AdminStudents() {
         </div>
       )}
 
-      {selectedId && <StudentDetailModal studentId={selectedId} onClose={() => setSelectedId(null)} />}
+      {selectedId && <StudentDetailModal studentId={selectedId} onClose={() => setSelectedId(null)} onDeleted={load} />}
     </div>
   );
 }

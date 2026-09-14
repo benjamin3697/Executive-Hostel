@@ -5,6 +5,7 @@ import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
 import { requireRole, requireSelfOrRole } from "../middleware/authorize";
 import { recordAudit } from "../services/audit.service";
 import { getStudentBalanceSummary } from "../services/payment.service";
+import { isOlderSemester } from "../services/academic.service";
 
 export const studentsRouter = Router();
 studentsRouter.use(authenticate);
@@ -170,7 +171,17 @@ studentsRouter.post("/enroll-bulk", requireRole("administrator", "landlady"), as
   const semester = await prisma.semester.findUnique({ where: { id: parsed.data.semesterId }, include: { academicYear: true } });
   if (!semester) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Semester not found." } });
 
-  const activeStudents = await prisma.student.findMany({ where: { status: "active" } });
+  const activeStudents = await prisma.student.findMany({ where: { status: "active" }, include: { semester: { include: { academicYear: true } } } });
+
+  const blockedStudent = activeStudents.find((student) => student.semester && student.semesterId !== semester.id && isOlderSemester(student.semester, semester));
+  if (blockedStudent) {
+    return res.status(409).json({
+      error: {
+        code: "OLDER_SEMESTER",
+        message: `${blockedStudent.fullName} is already enrolled in ${blockedStudent.semester!.academicYear.label} — ${blockedStudent.semester!.label}. Students cannot be moved to an older semester.`,
+      },
+    });
+  }
   
   let enrolledCount = 0;
   // Process sequentially to calculate balance securely for each
@@ -180,7 +191,7 @@ studentsRouter.post("/enroll-bulk", requireRole("administrator", "landlady"), as
     
     // Calculate old balance before switching
     const balanceSummary = await getStudentBalanceSummary(student.id);
-    const newCarriedBalance = balanceSummary.rawBalance !== null ? balanceSummary.rawBalance : student.carriedBalance;
+    const newCarriedBalance = balanceSummary.rawBalance !== null ? balanceSummary.rawBalance : Number(student.carriedBalance);
 
     await prisma.student.update({ 
       where: { id: student.id }, 
@@ -210,10 +221,22 @@ studentsRouter.post("/:id/enroll", requireRole("administrator", "landlady"), asy
   const semester = await prisma.semester.findUnique({ where: { id: parsed.data.semesterId }, include: { academicYear: true } });
   if (!semester) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Semester not found." } });
 
-  let newCarriedBalance = student.carriedBalance;
+  const currentSemester = student.semesterId
+    ? await prisma.semester.findUnique({ where: { id: student.semesterId }, include: { academicYear: true } })
+    : null;
+  if (currentSemester && currentSemester.id !== semester.id && isOlderSemester(currentSemester, semester)) {
+    return res.status(409).json({
+      error: {
+        code: "OLDER_SEMESTER",
+        message: `This student is already enrolled in ${currentSemester.academicYear.label} — ${currentSemester.label}. You cannot enroll them in an older semester.`,
+      },
+    });
+  }
+
+  let newCarriedBalance = Number(student.carriedBalance);
   if (student.semesterId !== semester.id) {
     const balanceSummary = await getStudentBalanceSummary(student.id);
-    newCarriedBalance = balanceSummary.rawBalance !== null ? balanceSummary.rawBalance : student.carriedBalance;
+    newCarriedBalance = balanceSummary.rawBalance !== null ? balanceSummary.rawBalance : Number(student.carriedBalance);
   }
 
   const updated = await prisma.student.update({
@@ -234,4 +257,45 @@ studentsRouter.post("/:id/enroll", requireRole("administrator", "landlady"), asy
   });
 
   res.json({ ...updated, semester: { id: semester.id, label: semester.label, academicYear: semester.academicYear.label, type: semester.type } });
+});
+
+// Undo an accidental enrollment only while it has not created financial history.
+studentsRouter.delete("/:id/enrollment", requireRole("administrator", "landlady"), async (req: AuthenticatedRequest, res) => {
+  const student = await prisma.student.findUnique({ where: { id: req.params.id }, include: { semester: true } });
+  if (!student) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Student not found." } });
+  if (!student.semesterId) return res.status(400).json({ error: { code: "INVALID_ACTION", message: "This student is not enrolled in a semester." } });
+  const [paymentCount, semesterPaymentCount] = await Promise.all([
+    prisma.payment.count({ where: { studentId: student.id } }),
+    prisma.payment.count({ where: { studentId: student.id, semesterId: student.semesterId } }),
+  ]);
+  if (paymentCount || semesterPaymentCount || Number(student.carriedBalance) !== 0) {
+    return res.status(409).json({ error: { code: "IN_USE", message: "This enrollment cannot be undone because payment or carried-balance history exists." } });
+  }
+  const updated = await prisma.student.update({ where: { id: student.id }, data: { semesterId: null, carriedBalance: 0 } });
+  await recordAudit({ actorId: req.user!.id, action: "student.enrollment_undone", entityType: "Student", entityId: student.id, previousValue: { semesterId: student.semesterId }, newValue: { semesterId: null } });
+  res.json(updated);
+});
+
+// Hard deletion is limited to accounts with no financial or residency history.
+studentsRouter.delete("/:id", requireRole("landlady"), async (req: AuthenticatedRequest, res) => {
+  const student = await prisma.student.findUnique({ where: { id: req.params.id } });
+  if (!student) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Student not found." } });
+  const [paymentCount, assignmentCount, checkInCount, checkOutCount, maintenanceCount] = await Promise.all([
+    prisma.payment.count({ where: { studentId: student.id } }),
+    prisma.roomAssignment.count({ where: { studentId: student.id } }),
+    prisma.checkIn.count({ where: { studentId: student.id } }),
+    prisma.checkOut.count({ where: { studentId: student.id } }),
+    prisma.maintenanceRequest.count({ where: { studentId: student.id } }),
+  ]);
+  if (student.currentRoomId || paymentCount || assignmentCount || checkInCount || checkOutCount || maintenanceCount) {
+    return res.status(409).json({ error: { code: "HAS_HISTORY", message: "This student has residency or financial history. Check the student out and keep the account for records instead of deleting it." } });
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.notification.deleteMany({ where: { recipientId: student.userId } });
+    await tx.auditLog.updateMany({ where: { actorId: student.userId }, data: { actorId: null } });
+    await tx.student.delete({ where: { id: student.id } });
+    await tx.user.delete({ where: { id: student.userId } });
+  });
+  await recordAudit({ actorId: req.user!.id, action: "student.deleted", entityType: "Student", entityId: student.id, previousValue: { fullName: student.fullName, registrationNumber: student.registrationNumber } });
+  res.status(204).send();
 });

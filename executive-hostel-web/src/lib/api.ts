@@ -179,6 +179,8 @@ export const api = {
   students: (query: { q?: string; status?: string; section?: string; roomType?: string; year?: number; course?: string; semesterId?: string; paymentStatus?: string; page?: number; pageSize?: number }) =>
     apiFetch<{ total: number; students: StudentRow[] }>("/api/v1/students", { query }),
   student: (id: string) => apiFetch<StudentDetail>(`/api/v1/students/${id}`),
+  deleteStudent: (id: string) => apiFetch<void>(`/api/v1/students/${id}`, { method: "DELETE" }),
+  undoStudentEnrollment: (id: string) => apiFetch(`/api/v1/students/${id}/enrollment`, { method: "DELETE" }),
   enrollStudent: (id: string, payload: { semesterId: string; course?: string; yearOfStudy?: number }) =>
     apiFetch(`/api/v1/students/${id}/enroll`, { method: "POST", body: payload }),
   enrollActiveStudents: (semesterId: string) =>
@@ -197,9 +199,13 @@ export const api = {
   // plus a recess semester, each potentially priced differently) ----
   academicYears: () => apiFetch<AcademicYearRow[]>("/api/v1/academic-years"),
   createAcademicYear: (label: string) => apiFetch<AcademicYearRow>("/api/v1/academic-years", { method: "POST", body: { label } }),
+  updateAcademicYear: (id: string, label: string) => apiFetch<AcademicYearRow>(`/api/v1/academic-years/${id}`, { method: "PATCH", body: { label } }),
+  deleteAcademicYear: (id: string) => apiFetch<void>(`/api/v1/academic-years/${id}`, { method: "DELETE" }),
   semesters: (academicYearId?: string) => apiFetch<SemesterRow[]>("/api/v1/semesters", { query: { academicYearId } }),
   createSemester: (payload: { academicYearId: string; label: string; type: "regular" | "recess" }) =>
     apiFetch<SemesterRow>("/api/v1/semesters", { method: "POST", body: payload }),
+  updateSemester: (id: string, payload: { label?: string; type?: "regular" | "recess" }) => apiFetch<SemesterRow>(`/api/v1/semesters/${id}`, { method: "PATCH", body: payload }),
+  deleteSemester: (id: string) => apiFetch<void>(`/api/v1/semesters/${id}`, { method: "DELETE" }),
 
   // ---- Payments ----
   pendingPayments: () =>
