@@ -135,6 +135,13 @@ function SiteNav({ links, actions, menuLabel, userRole }: { links: { to: string;
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
   return (
     <header className={`site-nav ${menuOpen ? "is-open" : ""}`}>
       <div className="site-nav-inner">
@@ -156,6 +163,7 @@ function SiteNav({ links, actions, menuLabel, userRole }: { links: { to: string;
         </nav>
         {actions && <div className="site-nav-actions">{actions}</div>}
       </div>
+      {menuOpen && <button className="mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
     </header>
   );
 }
