@@ -59,6 +59,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
+.site-nav.is-open { z-index: 1000; }
 .site-nav-inner, .site-footer-inner {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
@@ -411,9 +412,9 @@ input[type="number"] {
   }
   .site-brand { flex: 1; }
   .nav-menu-toggle { display: inline-flex; }
-  .site-nav-links { position: fixed; inset: 0 0 0 auto; z-index: 30; display: flex; flex: none; width: min(88vw, 360px); flex-direction: column; align-items: stretch; gap: 4px; padding: 18px 16px 22px; border: 0; background: #fff; box-shadow: -16px 0 36px rgba(52,42,38,.2); transform: translateX(105%); transition: transform .22s ease; overflow-y: auto; }
+  .site-nav-links { position: fixed; inset: 0 0 0 auto; z-index: 1002; display: flex; flex: none; width: min(88vw, 360px); flex-direction: column; align-items: stretch; gap: 4px; padding: 18px 16px 22px; border: 0; background: #fff; box-shadow: -16px 0 36px rgba(52,42,38,.2); transform: translateX(105%); transition: transform .22s ease; overflow-y: auto; }
   .site-nav.is-open .site-nav-links { transform: translateX(0); }
-  .site-nav.is-open::after { content: ""; position: fixed; inset: 0; z-index: 25; background: rgba(52,42,38,.42); }
+  .site-nav.is-open::after { content: ""; position: fixed; inset: 0; z-index: 1001; background: rgba(52,42,38,.42); }
   .mobile-nav-head { display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-bottom: 12px; padding: 0 2px 12px; border-bottom: 1px solid var(--color-border); color: var(--color-text); font-family: "Fraunces", Georgia, serif; font-size: 21px; }
   .mobile-nav-head button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg); color: var(--color-text); }
   .site-nav-links a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 12px; border-radius: 9px; font-size: 14px; }

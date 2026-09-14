@@ -30,7 +30,7 @@ export default function Contact() {
         {landlady?.email && <a className="contact-action" href={`mailto:${landlady.email}`}><Mail size={18} /><span>Email management</span></a>}
       </div>
       {contacts?.length === 0 && <div className="card" style={{ color: "var(--color-muted)" }}>Direct contacts are being configured. You can still send an enquiry below or find us in Soroti.</div>}
-      <div className="card contact-map"><iframe title="Executive Hostel location in Soroti" loading="lazy" src="https://www.google.com/maps?q=Soroti%20University%2C%20Uganda&output=embed" /></div>
+      <div className="card contact-map"><iframe title="Executive Hostel near Hursey Resort in Soroti" loading="lazy" src="https://www.google.com/maps?q=Executive%20Hostel%20near%20Hursey%20Resort%2C%20Soroti%2C%20Uganda&output=embed" /></div>
       <form className="card" onSubmit={submitInquiry}>
         <h2 style={{ margin: "0 0 5px", fontSize: 18 }}>Send an enquiry</h2><p style={{ margin: "0 0 14px", color: "var(--color-muted)", fontSize: 12 }}>Ask about rooms, fees, applications, or visiting.</p>
         <div className="field" style={{ marginBottom: 10 }}><label htmlFor="contact-email">Your email</label><input id="contact-email" className="input" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
