@@ -93,13 +93,19 @@ See individual README files:
    - Complete end-to-end deployment
    - Testing procedures
 
-2. **Backend (Render)**: [RENDER_DEPLOYMENT_GUIDE.md](RENDER_DEPLOYMENT_GUIDE.md)
+2. **Review the Hosting and Cost Plan**: [docs/OWNERS_DEVELOPERS_HOSTING_AND_COSTS.md](docs/OWNERS_DEVELOPERS_HOSTING_AND_COSTS.md)
+   - Cheapest practical hosting arrangement
+   - First-year and renewal cost estimates
+   - Owner responsibilities
+   - Developer deployment and operations runbook
+
+3. **Backend (Render)**: [RENDER_DEPLOYMENT_GUIDE.md](RENDER_DEPLOYMENT_GUIDE.md)
    - Detailed Render configuration
    - Environment variables required
    - Database setup
    - Troubleshooting specific to backend
 
-3. **Frontend (Vercel)**: [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)
+4. **Frontend (Vercel)**: [VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)
    - Vercel configuration
    - Environment variable setup
    - Testing deployment
