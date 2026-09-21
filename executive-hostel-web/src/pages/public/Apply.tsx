@@ -3,12 +3,26 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
 
 const REGISTRATION_NUMBER_PATTERN = "\\d{10}";
+const COURSES = [
+  "Bachelor of Medicine and Bachelor of Surgery",
+  "Bachelor of Nursing Science",
+  "Bachelor of Medical Laboratory Sciences",
+  "Bachelor of Science in Physiotherapy",
+  "Bachelor of Engineering in Electronics and Computer Engineering",
+  "Bachelor of Engineering in Electrical and Electronics Engineering",
+  "Bachelor of Science in Accounting, Finance, and Computing",
+  "Higher Education Access Certificate",
+];
+const OTHER_COURSE = "Other";
+const YEARS_OF_STUDY = [1, 2, 3, 4, 5];
 type AvailableRoom = { id: string; section: string; roomNumber: string; roomType: string; status: string };
 
 export default function Apply() {
   const [searchParams] = useSearchParams();
   const [rooms, setRooms] = useState<AvailableRoom[]>([]);
   const [preferredRoomId, setPreferredRoomId] = useState(searchParams.get("roomId") ?? "");
+  const [courseSelection, setCourseSelection] = useState("");
+  const [customCourse, setCustomCourse] = useState("");
   const [form, setForm] = useState({
     fullName: "", registrationNumber: "", course: "", yearOfStudy: "",
     phone: "", email: "", emergencyContact: "",
@@ -36,9 +50,16 @@ export default function Apply() {
       setSubmitting(false);
       return;
     }
+    const course = courseSelection === OTHER_COURSE ? customCourse.trim() : courseSelection;
+    if (!course) {
+      setError("Please select your course or choose Other and enter it.");
+      setSubmitting(false);
+      return;
+    }
     try {
       await api.submitApplication({
         ...form,
+        course,
         confirmPassword: undefined,
         yearOfStudy: form.yearOfStudy ? Number(form.yearOfStudy) : undefined,
         preferredRoomId: preferredRoomId || undefined,
@@ -101,8 +122,37 @@ export default function Apply() {
           placeholder: "e.g. 2301600084",
           title: "10 digits - the first 2 are your year of entry (e.g. 2301600084 = entered 2023)",
         })}
-        {field("course", "Course/Program", false)}
-        {field("yearOfStudy", "Year of study", false, "number")}
+        <div style={{ marginBottom: 12 }}>
+          <label htmlFor="course-selection" style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Course/Program</label>
+          <select
+            id="course-selection"
+            className="input"
+            required
+            value={courseSelection}
+            onChange={(e) => setCourseSelection(e.target.value)}
+          >
+            <option value="">Select your course/program</option>
+            {COURSES.map((course) => <option key={course} value={course}>{course}</option>)}
+            <option value={OTHER_COURSE}>Other</option>
+          </select>
+        </div>
+        {courseSelection === OTHER_COURSE && field("course", "Enter your course/program", true, "text", {
+          value: customCourse,
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) => setCustomCourse(e.target.value),
+          maxLength: 150,
+        })}
+        <div style={{ marginBottom: 12 }}>
+          <label htmlFor="year-of-study" style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Year of study</label>
+          <select
+            id="year-of-study"
+            className="input"
+            value={form.yearOfStudy}
+            onChange={(e) => set("yearOfStudy", e.target.value)}
+          >
+            <option value="">Select year of study</option>
+            {YEARS_OF_STUDY.map((year) => <option key={year} value={year}>Year {year}</option>)}
+          </select>
+        </div>
         {field("phone", "Phone number")}
         {field("email", "Email", false, "email")}
         {field("emergencyContact", "Emergency contact", false)}
