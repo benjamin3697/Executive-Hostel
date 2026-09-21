@@ -350,6 +350,13 @@ function PaymentCard({
 // ─── Page root ────────────────────────────────────────────────────────────────
 export default function AdminPayments() {
   const [payments, setPayments] = useState<Payment[] | null>(null);
+  const [students, setStudents] = useState<{ id: string; fullName: string; registrationNumber: string }[]>([]);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualStudentId, setManualStudentId] = useState("");
+  const [manualAmount, setManualAmount] = useState("");
+  const [manualPayerName, setManualPayerName] = useState("");
+  const [manualRemarks, setManualRemarks] = useState("");
+  const [manualBusy, setManualBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -361,6 +368,37 @@ export default function AdminPayments() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    api.students({ status: "active", page: 1, pageSize: 100 })
+      .then((result) => setStudents(result.students.map((student) => ({ id: student.id, fullName: student.fullName, registrationNumber: student.registrationNumber }))))
+      .catch(() => setStudents([]));
+  }, []);
+
+  async function handleManualPayment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!manualStudentId || !manualAmount) return;
+    setManualBusy(true);
+    try {
+      await api.recordManualPayment({
+        studentId: manualStudentId,
+        amount: Number(manualAmount),
+        paymentDate: new Date().toISOString(),
+        payerName: manualPayerName.trim() || undefined,
+        remarks: manualRemarks.trim() || undefined,
+      });
+      setManualStudentId("");
+      setManualAmount("");
+      setManualPayerName("");
+      setManualRemarks("");
+      setShowManualForm(false);
+      alert("Payment recorded and verified successfully.");
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Failed to record payment.");
+    } finally {
+      setManualBusy(false);
+    }
+  }
 
   async function handleApprove(id: string) {
     setBusyId(id);
@@ -417,10 +455,42 @@ export default function AdminPayments() {
         <h1 className="font-display" style={{ fontSize: 22, margin: 0 }}>
           Pending Verifications{payments ? ` (${payments.length})` : ""}
         </h1>
-        <button className="btn btn-outline" onClick={load} style={{ fontSize: 13 }}>
-          <RefreshCw size={13} /> Refresh
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-accent" onClick={() => setShowManualForm((open) => !open)} style={{ fontSize: 13 }}>
+            {showManualForm ? <X size={13} /> : <CheckCircle2 size={13} />} {showManualForm ? "Close" : "Record cash payment"}
+          </button>
+          <button className="btn btn-outline" onClick={load} style={{ fontSize: 13 }}>
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
       </div>
+
+      {showManualForm && (
+        <form onSubmit={handleManualPayment} className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, margin: "0 0 6px" }}>Record direct payment</h2>
+          <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 14px" }}>Use this for cash or offline payments received directly from a student. No receipt upload is required.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Student
+              <select className="input" required value={manualStudentId} onChange={(e) => setManualStudentId(e.target.value)} style={{ marginTop: 6 }}>
+                <option value="">Select student</option>
+                {students.map((student) => <option key={student.id} value={student.id}>{student.fullName} ({student.registrationNumber})</option>)}
+              </select>
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Amount (UGX)
+              <input className="input" required min="1" step="1" type="number" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} style={{ marginTop: 6 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Paid by (optional)
+              <input className="input" value={manualPayerName} onChange={(e) => setManualPayerName(e.target.value)} placeholder="Student or payer name" style={{ marginTop: 6 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Note (optional)
+              <input className="input" value={manualRemarks} onChange={(e) => setManualRemarks(e.target.value)} placeholder="Cash received at office" style={{ marginTop: 6 }} />
+            </label>
+          </div>
+          <button type="submit" disabled={manualBusy} className="btn btn-accent" style={{ marginTop: 14 }}>
+            <CheckCircle2 size={14} /> {manualBusy ? "Recording..." : "Record and verify payment"}
+          </button>
+        </form>
+      )}
 
       {!payments && (
         <div style={{ color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>

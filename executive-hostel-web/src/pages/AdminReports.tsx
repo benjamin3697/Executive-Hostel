@@ -171,14 +171,14 @@ export default function AdminReports() {
 
         {/* Financial Progress Banner */}
         <div className="card" style={{ padding: 24, marginBottom: 16, background: "linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.05), rgba(var(--color-accent-rgb), 0.05))" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
-            <div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 16, alignItems: "end", marginBottom: 16 }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Total Expected Revenue</div>
-              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(financial.expected)}</div>
+              <div style={{ fontSize: "clamp(24px, 7vw, 32px)", fontWeight: 800, whiteSpace: "nowrap" }}>{fmt(financial.expected)}</div>
             </div>
-            <div style={{ textAlign: "right" }}>
+            <div style={{ textAlign: "right", minWidth: 0 }}>
               <div style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Collection Rate</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: "var(--color-accent)" }}>{financialProgress.toFixed(1)}%</div>
+              <div style={{ fontSize: "clamp(24px, 7vw, 32px)", fontWeight: 800, color: "var(--color-accent)", whiteSpace: "nowrap" }}>{financialProgress.toFixed(1)}%</div>
             </div>
           </div>
           
@@ -188,7 +188,7 @@ export default function AdminReports() {
             <div style={{ height: "100%", background: "var(--color-warning)", width: `${pendingProgress}%`, transition: "width 1s" }} title={`Pending: ${fmt(financial.pending)}`} />
           </div>
           
-          <div style={{ display: "flex", gap: 24, marginTop: 16, fontSize: 13, color: "var(--color-muted)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginTop: 16, fontSize: 13, color: "var(--color-muted)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--color-accent)" }} /> Verified: <strong style={{ color: "var(--color-text)" }}>{fmt(financial.verified)}</strong>
             </div>

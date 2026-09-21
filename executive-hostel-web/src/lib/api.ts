@@ -220,6 +220,8 @@ export const api = {
     apiFetch(`/api/v1/payments/${id}/request-clarification`, { method: "POST", body: { message } }),
   correctPayment: (id: string, reason: string, newAmount: number) =>
     apiFetch(`/api/v1/payments/${id}/correct`, { method: "POST", body: { reason, newAmount } }),
+  recordManualPayment: (payload: { studentId: string; amount: number; paymentDate: string; payerName?: string; remarks?: string }) =>
+    apiFetch<Payment>("/api/v1/payments/manual", { method: "POST", body: payload }),
 submitPayment: (payload: {
     amount: number; paymentMethod: string; paymentDate: string;
     transactionReference?: string; payerName?: string; remarks?: string;

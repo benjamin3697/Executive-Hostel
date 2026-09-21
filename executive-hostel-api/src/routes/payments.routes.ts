@@ -142,6 +142,54 @@ paymentsRouter.post("/", requireRole("student"), async (req: AuthenticatedReques
 // ---------------------------------------------------------------------------
 // ADMIN: verification queue with filters (docs Section 23)
 // ---------------------------------------------------------------------------
+const manualPaymentSchema = z.object({
+  studentId: z.string().uuid(),
+  amount: z.number().positive(),
+  paymentDate: z.string().datetime(),
+  payerName: z.string().max(150).optional(),
+  remarks: z.string().max(1000).optional(),
+});
+
+// Landlady/admin can record cash or offline payments received directly.
+// These payments have no uploaded evidence and are verified immediately.
+paymentsRouter.post("/manual", requireRole("administrator", "landlady"), requirePermission("verify_payments"), async (req: AuthenticatedRequest, res) => {
+  const parsed = manualPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input." } });
+  }
+  try {
+    const student = await prisma.student.findUnique({ where: { id: parsed.data.studentId }, include: { currentRoom: true } });
+    if (!student) throw new PaymentError("NOT_FOUND", "Student not found.");
+
+    const semester = student.semesterId
+      ? await prisma.semester.findUnique({ where: { id: student.semesterId } })
+      : null;
+    const fee = await getCurrentFeeForStudent(student.id);
+    const summary = await getStudentBalanceSummary(student.id);
+    const payment = await prisma.payment.create({
+      data: {
+        studentId: student.id,
+        roomId: student.currentRoomId ?? undefined,
+        accommodationFeeId: fee?.id,
+        semesterId: student.semesterId ?? undefined,
+        academicYearId: semester?.academicYearId ?? undefined,
+        amount: parsed.data.amount,
+        paymentMethod: "other",
+        paymentDate: new Date(parsed.data.paymentDate),
+        payerName: parsed.data.payerName,
+        remarks: parsed.data.remarks ?? "Cash/offline payment recorded by landlady.",
+        status: "pending",
+        previousBalance: summary.balance ?? undefined,
+      },
+    });
+
+    const verified = await verifyPayment({ paymentId: payment.id, verifiedBy: req.user!.id, adminRemarks: "Recorded directly by landlady/admin; no receipt uploaded." });
+    res.status(201).json(verified);
+  } catch (err) {
+    handlePaymentError(err, res);
+  }
+});
+
 const listQuerySchema = z.object({
   status: z.enum(["pending", "verified", "rejected", "clarification_requested"]).optional(),
   section: z.string().optional(),
