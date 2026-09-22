@@ -4,7 +4,8 @@ import { prisma } from "../lib/prisma";
 import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
 import { requireRole, requireSelfOrRole } from "../middleware/authorize";
 import { recordAudit } from "../services/audit.service";
-import { notifyByEmailOrSms } from "../services/notify.service";
+import { notifyByEmail, notifyByEmailOrSms } from "../services/notify.service";
+import { env } from "../lib/env";
 
 export const maintenanceRouter = Router();
 maintenanceRouter.use(authenticate);
@@ -57,6 +58,11 @@ maintenanceRouter.post("/", requireRole("student"), async (req: AuthenticatedReq
       payload: { requestId: request.id, category: request.category } as any,
     })),
   });
+  await Promise.all(admins.map((admin) => notifyByEmail({
+    email: admin.email,
+    subject: "New maintenance request",
+    message: `A new ${request.category.replace(/_/g, " ")} maintenance request was submitted for review. Open ${env.appUrl}/admin/maintenance to view it.`,
+  })));
 
   res.status(201).json(request);
 });

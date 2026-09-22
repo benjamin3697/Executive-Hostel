@@ -28,3 +28,17 @@ export async function notifyByEmailOrSms(params: {
   // in-app Notification row (created separately, before this is called)
   // is the only record, same as it already was before this helper existed.
 }
+
+export async function notifyByEmail(params: {
+  email?: string | null;
+  subject: string;
+  message: string;
+}): Promise<void> {
+  if (!params.email) return;
+  await sendEmail({
+    to: params.email,
+    subject: params.subject,
+    text: params.message,
+    html: `<p>${params.message}</p>`,
+  });
+}

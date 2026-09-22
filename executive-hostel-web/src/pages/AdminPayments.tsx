@@ -7,6 +7,10 @@ import {
 import { api, Payment, PaymentEvidence, ApiError } from "../lib/api";
 
 const fmt = (n: number) => "UGX " + n.toLocaleString();
+const formatAmountInput = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+  return digits ? Number(digits).toLocaleString("en-US") : "";
+};
 
 // ─── Full-screen lightbox ──────────────────────────────────────────────────────
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
@@ -378,11 +382,13 @@ export default function AdminPayments() {
   async function handleManualPayment(e: React.FormEvent) {
     e.preventDefault();
     if (!manualStudentId || !manualAmount) return;
+    const amount = Number(manualAmount.replace(/,/g, ""));
+    if (!Number.isSafeInteger(amount) || amount <= 0) return;
     setManualBusy(true);
     try {
       await api.recordManualPayment({
         studentId: manualStudentId,
-        amount: Number(manualAmount),
+        amount,
         paymentDate: new Date().toISOString(),
         payerName: manualPayerName.trim() || undefined,
         remarks: manualRemarks.trim() || undefined,
@@ -477,7 +483,17 @@ export default function AdminPayments() {
               </select>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600 }}>Amount (UGX)
-              <input className="input" required min="1" step="1" type="number" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} style={{ marginTop: 6 }} />
+              <input
+                className="input"
+                required
+                inputMode="numeric"
+                pattern="[0-9,]*"
+                type="text"
+                value={manualAmount}
+                onChange={(e) => setManualAmount(formatAmountInput(e.target.value))}
+                placeholder="e.g. 650,000"
+                style={{ marginTop: 6 }}
+              />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600 }}>Paid by (optional)
               <input className="input" value={manualPayerName} onChange={(e) => setManualPayerName(e.target.value)} placeholder="Student or payer name" style={{ marginTop: 6 }} />

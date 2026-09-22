@@ -4,8 +4,10 @@ import { prisma } from "../lib/prisma";
 import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
 import { requireRole, requirePermission, requireSelfOrRole } from "../middleware/authorize";
 import { getEvidenceDownloadUrl } from "../lib/storage";
+import { env } from "../lib/env";
 import { getCurrentFeeForStudent, getStudentBalanceSummary, verifyPayment, rejectPayment, requestClarification, correctPayment, PaymentError } from "../services/payment.service";
 import { recordAudit } from "../services/audit.service";
+import { notifyByEmail } from "../services/notify.service";
 
 export const paymentsRouter = Router();
 paymentsRouter.use(authenticate);
@@ -132,6 +134,11 @@ paymentsRouter.post("/", requireRole("student"), async (req: AuthenticatedReques
         payload: { paymentId: payment.id, studentName: student.fullName, amount: payment.amount } as any,
       })),
     });
+    await Promise.all(verifiers.map((verifier) => notifyByEmail({
+      email: verifier.email,
+      subject: "Payment awaiting verification",
+      message: `${student.fullName} submitted a payment of UGX ${Number(payment.amount).toLocaleString()} for verification. Review it at ${env.appUrl}/admin/payments.`,
+    })));
 
     res.status(201).json(payment);
   } catch (err) {
