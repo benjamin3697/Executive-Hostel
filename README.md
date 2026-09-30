@@ -21,7 +21,7 @@ The Executive Hostel Management System is a full-stack web application for:
 | Backend | Node.js + Express | 20+ |
 | Database | PostgreSQL | 13+ |
 | ORM | Prisma | 5.20 |
-| File Storage | Backblaze B2 (S3-compatible) | - |
+| File Storage | Cloudflare R2 (S3-compatible) | - |
 | Deployment | Vercel (Frontend), Render (Backend) | - |
 
 ---
@@ -237,10 +237,11 @@ DATABASE_URL=postgresql://...
 JWT_ACCESS_SECRET=<random_hex>
 JWT_REFRESH_SECRET=<random_hex>
 CORS_ORIGINS=https://your-frontend.vercel.app
-S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com
-S3_REGION=us-west-004
-S3_BUCKET=your-bucket
-S3_ACCESS_KEY_ID=<key>
+S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=<your-r2-bucket>
+S3_ACCESS_KEY_ID=<r2-access-key-id>
+S3_SECRET_ACCESS_KEY=<r2-secret-access-key>
 S3_SECRET_ACCESS_KEY=<secret>
 RESEND_API_KEY=<optional>
 EMAIL_FROM=Executive Hostel <noreply@yourdomain.com>

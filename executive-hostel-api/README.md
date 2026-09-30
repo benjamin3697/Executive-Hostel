@@ -89,17 +89,40 @@ Grant these via `PATCH /admin/users/:id/permissions` as your team's roles need t
 
 The landlady role bypasses all permission checks implicitly — it's the one role that's always "everything," matching docs Section 44.
 
-## File storage (Backblaze B2, free tier)
+## File storage (Cloudflare R2)
 
-Payment evidence and maintenance photos upload directly from the student's browser to a private bucket using short-lived presigned PUT URLs. The API issues URLs only for the authenticated student's storage prefix, enforces the configured size limit, and returns short-lived download URLs after authorization. The file bytes never pass through this API server. Set up:
+Payment evidence and maintenance photos upload directly from the student's browser to a private bucket using short-lived presigned PUT URLs. The API issues URLs only for the authenticated student's storage prefix, enforces the configured size limit, and returns short-lived download URLs after authorization. File bytes never pass through this API server.
 
-1. Sign up at [backblaze.com/b2](https://www.backblaze.com/cloud-storage) — free tier is 10GB storage + 1GB/day download, no card required.
-2. Create a bucket and set it to **Private** (not public) — this is non-negotiable, it's where payment screenshots live.
-3. Create an Application Key scoped to just that bucket.
-4. Copy the endpoint/region shown on the bucket page into `.env` (see `.env.example` — the values look like `https://s3.us-west-004.backblazeb2.com` / `us-west-004`).
-5. Configure the bucket's CORS rules to allow `PUT` and `GET` from the local frontend origin and deployed Vercel origin, with the `Content-Type` request header allowed. Keep the bucket private; do not add `*` as an allowed origin in production.
+1. Create an R2 bucket and keep it private.
+2. Create an R2 API token with **Object Read & Write** permissions, scoped to this bucket. Use its Access Key ID and Secret Access Key as the API credentials.
+3. Set the API environment variables (`.env` locally and Render in production):
 
-Because the code talks to B2 through its S3-compatible API (`src/lib/storage.ts`), switching to DigitalOcean Spaces or AWS S3 later is just different `.env` values — no code changes. If B2's free tier ever gets tight (very unlikely at 72 rooms' worth of payment screenshots), putting Cloudflare in front of the bucket makes B2→Cloudflare egress free/unlimited under their Bandwidth Alliance.
+   ```env
+   S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+   S3_REGION=auto
+   S3_BUCKET=<your-r2-bucket-name>
+   S3_ACCESS_KEY_ID=<r2-access-key-id>
+   S3_SECRET_ACCESS_KEY=<r2-secret-access-key>
+   S3_MAX_UPLOAD_BYTES=8388608
+   ```
+
+4. In the bucket's **Settings → CORS Policy**, save this policy, replacing the origin with the frontend's exact origin. Add `http://localhost:5173` to `AllowedOrigins` only if testing locally.
+
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://executive-hostel.vercel.app"],
+       "AllowedMethods": ["PUT", "GET"],
+       "AllowedHeaders": ["Content-Type"],
+       "ExposeHeaders": ["ETag"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+
+5. Keep the bucket private and never put R2 credentials in Vercel or frontend `VITE_` variables. Existing B2 objects are not copied automatically; existing database links continue pointing at their original storage until migrated.
+
+The API uses the S3-compatible interface, so the storage code remains provider-neutral.
 
 ## Email delivery (Resend, free tier)
 

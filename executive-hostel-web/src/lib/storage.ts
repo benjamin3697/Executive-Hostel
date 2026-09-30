@@ -43,11 +43,11 @@ export async function uploadFileToB2(file: File, purpose: UploadPurpose): Promis
       body: fileToUpload,
     });
   } catch {
-    throw new Error(`Could not reach Backblaze B2. Configure the bucket CORS rule to allow PUT from ${window.location.origin} with the Content-Type header.`);
+    throw new Error(`Could not reach object storage. Configure the bucket CORS rule to allow PUT from ${window.location.origin} with the Content-Type header.`);
   }
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(`Backblaze B2 rejected the upload (${response.status}). Check the bucket CORS rule, application key permissions, and signed headers. ${detail.slice(0, 240)}`);
+    throw new Error(`Object storage rejected the upload (${response.status}). Check bucket CORS, API token permissions, and signed headers. ${detail.slice(0, 240)}`);
   }
   return key;
 }

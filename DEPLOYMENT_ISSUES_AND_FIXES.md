@@ -79,12 +79,12 @@ APP_URL=https://executive-hostel-4twfcre60-benja-b083.vercel.app
 AT_API_KEY=<your_africa_talking_key>
 AT_USERNAME=sandbox
 
-# S3/Backblaze B2 (required - for payment uploads)
-S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com
-S3_REGION=us-west-004
-S3_BUCKET=your-bucket-name
-S3_ACCESS_KEY_ID=<your_access_key>
-S3_SECRET_ACCESS_KEY=<your_secret_key>
+# S3/Cloudflare R2 (required - for payment uploads)
+S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=your-r2-bucket-name
+S3_ACCESS_KEY_ID=<your_r2_access_key_id>
+S3_SECRET_ACCESS_KEY=<your_r2_secret_access_key>
 S3_MAX_UPLOAD_BYTES=8388608
 ```
 
@@ -99,12 +99,11 @@ S3_MAX_UPLOAD_BYTES=8388608
   openssl rand -hex 32
   ```
 
-- **S3/Backblaze B2**:
-  1. Go to [backblaze.com/b2](https://backblaze.com/b2)
-  2. Sign up (free tier: 10GB storage)
-  3. Create a PRIVATE bucket
-  4. Create an Application Key scoped to that bucket
-  5. Copy endpoint, region, bucket name, access key, and secret
+- **S3/Cloudflare R2**:
+   1. Create a private R2 bucket and a bucket-scoped Object Read & Write API token
+   2. Set endpoint to `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` and region to `auto`
+   3. Configure the bucket CORS policy for the Vercel origin, `PUT`/`GET`, and the `Content-Type` header
+   4. Add the R2 bucket name and token credentials to the API environment
 
 - **Email (Resend)**:
   1. Go to [resend.com](https://resend.com)
@@ -260,7 +259,7 @@ Before deploying, test locally:
 
 - [ ] Database created on Neon/Supabase (copy DATABASE_URL)
 - [ ] JWT secrets generated (run `openssl rand -hex 32` twice)
-- [ ] S3/Backblaze B2 bucket created and credentials copied
+- [ ] S3/Cloudflare R2 bucket created and credentials copied
 - [ ] All environment variables added to Render
 - [ ] Render deployment completed successfully
 - [ ] `/health` endpoint returns `{"status":"ok"}`

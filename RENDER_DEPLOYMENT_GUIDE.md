@@ -9,7 +9,7 @@ Before starting, you'll need:
 1. **GitHub Account** - Already connected to your project
 2. **Render Account** - Free tier available at [render.com](https://render.com)
 3. **Database** - Neon ([neon.tech](https://neon.tech)) or Supabase ([supabase.com](https://supabase.com))
-4. **S3 Storage** - Backblaze B2 ([backblaze.com/b2](https://backblaze.com/b2))
+4. **S3 Storage** - Cloudflare R2 ([developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/))
 5. **Email Service** (optional) - Resend ([resend.com](https://resend.com))
 6. **SMS Service** (optional) - Africa's Talking ([africastalking.com](https://africastalking.com))
 
@@ -55,33 +55,25 @@ c8e1204fe778daee6b800a93472dff26966733e73af28e1e057f411d5e3b8e7d
 
 ---
 
-## Step 3: Set Up S3/Backblaze B2 (File Storage)
+## Step 3: Set Up Cloudflare R2 (File Storage)
 
 Payment evidence and maintenance photos are stored in S3. This is required for the app to function.
 
-1. **Create Backblaze B2 Account**
-   - Go to [backblaze.com/b2](https://backblaze.com/b2)
-   - Sign up (free tier: 10GB storage + 1GB/day download)
-   - No credit card required
+1. **Create a Cloudflare R2 bucket**
+   - Open **R2 Object Storage** in the Cloudflare dashboard and create a bucket.
+   - Keep the bucket private.
 
 2. **Create a Private Bucket**
-   - Click "Create a Bucket"
-   - Name: `executive-hostel-storage` (or similar)
-   - **Type: Private** (this is critical - payment evidence must not be public)
-   - Note the S3 endpoint URL (you'll see it on the bucket page, looks like: `https://s3.us-west-004.backblazeb2.com`)
-   - Note the region (e.g., `us-west-004`)
+   - Record the bucket name and your Cloudflare account ID.
+   - The S3 endpoint is `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`; the region is `auto`.
 
-3. **Create Application Key**
-   - Go to **Account** → **App Keys**
-   - Click "Create New Master Key"
-   - Restrict it to your bucket only
-   - Copy:
-     - Key ID (access key)
-     - Application Key (secret)
+3. **Create R2 API Token**
+   - Create an API token with **Object Read & Write** access, restricted to this bucket.
+   - Copy the Access Key ID and Secret Access Key into Render's API environment variables.
 
 4. **Configure Bucket CORS**
-    - Allow `PUT` and `GET` from the local frontend origin and your deployed Vercel origin.
-    - Allow the `Content-Type` request header. Keep the bucket private and do not use a wildcard origin in production.
+   - In the bucket's **Settings → CORS Policy**, allow `PUT` and `GET` from `https://executive-hostel.vercel.app` and allow the `Content-Type` header.
+   - Add `http://localhost:5173` only for local testing. Keep the bucket private.
 
 ---
 
@@ -141,11 +133,11 @@ NODE_ENV=production
 ### S3 Variables (required - for file uploads)
 
 ```
-S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com
-S3_REGION=us-west-004
-S3_BUCKET=executive-hostel-storage
-S3_ACCESS_KEY_ID=<paste_backblaze_key_id>
-S3_SECRET_ACCESS_KEY=<paste_backblaze_application_key>
+S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=<your-r2-bucket-name>
+S3_ACCESS_KEY_ID=<paste_r2_access_key_id>
+S3_SECRET_ACCESS_KEY=<paste_r2_secret_access_key>
 S3_MAX_UPLOAD_BYTES=8388608
 ```
 
@@ -247,11 +239,11 @@ This means `CORS_ORIGINS` doesn't include your frontend URL:
 | `JWT_ACCESS_SECRET` | ✅ Yes | Signing key for access tokens |
 | `JWT_REFRESH_SECRET` | ✅ Yes | Signing key for refresh tokens |
 | `CORS_ORIGINS` | ✅ Yes | Frontend URL for CORS |
-| `S3_ENDPOINT` | ✅ Yes | Backblaze S3 endpoint URL |
-| `S3_REGION` | ✅ Yes | Backblaze region |
+| `S3_ENDPOINT` | ✅ Yes | Cloudflare R2 S3 endpoint URL |
+| `S3_REGION` | ✅ Yes | `auto` for R2 |
 | `S3_BUCKET` | ✅ Yes | Bucket name |
-| `S3_ACCESS_KEY_ID` | ✅ Yes | Backblaze access key |
-| `S3_SECRET_ACCESS_KEY` | ✅ Yes | Backblaze secret key |
+| `S3_ACCESS_KEY_ID` | ✅ Yes | R2 Access Key ID |
+| `S3_SECRET_ACCESS_KEY` | ✅ Yes | R2 Secret Access Key |
 | `PORT` | ⚠️ Auto | Server port (Render sets this) |
 | `NODE_ENV` | ⚠️ Auto | Set to `production` |
 | `RESEND_API_KEY` | ❌ Optional | For email password resets |

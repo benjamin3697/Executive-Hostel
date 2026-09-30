@@ -21,16 +21,16 @@ openssl rand -hex 32  # Copy this for JWT_REFRESH_SECRET
 - [ ] JWT_ACCESS_SECRET generated and saved
 - [ ] JWT_REFRESH_SECRET generated and saved
 
-### S3 Storage Setup
-- [ ] Create Backblaze B2 account at [backblaze.com/b2](https://backblaze.com/b2)
-- [ ] Create a **PRIVATE** bucket named `executive-hostel-storage`
-- [ ] Create Application Key scoped to that bucket
+### R2 Storage Setup
+- [ ] Create a Cloudflare R2 bucket and keep it **private**
+- [ ] Create an R2 API token scoped to that bucket with Object Read & Write permissions
 - [ ] Save:
-  - [ ] S3 endpoint (e.g., `https://s3.us-west-004.backblazeb2.com`)
-  - [ ] S3 region (e.g., `us-west-004`)
+  - [ ] R2 endpoint (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`)
+  - [ ] R2 region (`auto`)
   - [ ] S3 bucket name
-  - [ ] S3 access key ID
-  - [ ] S3 secret access key
+  - [ ] R2 Access Key ID
+  - [ ] R2 Secret Access Key
+  - [ ] Bucket CORS policy allows `PUT` and `GET` from the Vercel origin with `Content-Type`
 
 ### Email Service (Optional but Recommended)
 - [ ] Create Resend account at [resend.com](https://resend.com)
@@ -58,11 +58,11 @@ Follow: [RENDER_DEPLOYMENT_GUIDE.md](RENDER_DEPLOYMENT_GUIDE.md)
 - [ ] `DATABASE_URL` (from Neon)
 - [ ] `JWT_ACCESS_SECRET` (generated secret)
 - [ ] `JWT_REFRESH_SECRET` (generated secret)
-- [ ] `S3_ENDPOINT` (from Backblaze)
-- [ ] `S3_REGION` (from Backblaze)
-- [ ] `S3_BUCKET` (from Backblaze)
-- [ ] `S3_ACCESS_KEY_ID` (from Backblaze)
-- [ ] `S3_SECRET_ACCESS_KEY` (from Backblaze)
+- [ ] `S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
+- [ ] `S3_REGION=auto`
+- [ ] `S3_BUCKET` (R2 bucket name)
+- [ ] `S3_ACCESS_KEY_ID` (R2 Access Key ID)
+- [ ] `S3_SECRET_ACCESS_KEY` (R2 Secret Access Key)
 - [ ] `S3_MAX_UPLOAD_BYTES=8388608`
 - [ ] `PORT=4000`
 - [ ] `NODE_ENV=production`
@@ -300,7 +300,7 @@ If something breaks:
 - **Frontend build size:** ~500KB gzipped
 - **API response time:** <200ms on Render free tier
 - **Database:** Neon free tier supports ~100K queries/month
-- **S3 storage:** Backblaze B2 free: 10GB storage, 1GB/day download
+- **S3 storage:** Cloudflare R2 free tier currently includes 10 GB-month of standard storage; check current operation limits and pricing
 
 Monitor on Render/Vercel dashboards if getting close to limits.
 

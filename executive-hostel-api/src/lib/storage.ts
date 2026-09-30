@@ -4,10 +4,9 @@ import crypto from "crypto";
 import { env } from "./env";
 
 /**
- * Any S3-compatible provider works here unchanged - only .env values differ.
- * Configured by default for Backblaze B2's free tier (10GB storage + 1GB/day
- * download, no card required). Swapping to DigitalOcean Spaces or AWS S3
- * later is a credentials/endpoint change, not a code change.
+ * Any S3-compatible provider works here unchanged - only environment values differ.
+ * The deployment uses Cloudflare R2; other S3-compatible providers can be used
+ * by changing the endpoint, region, bucket, and credentials.
  */
 export const s3 = new S3Client({
   endpoint: env.s3Endpoint,
