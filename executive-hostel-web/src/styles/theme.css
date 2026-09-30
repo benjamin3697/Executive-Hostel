@@ -169,6 +169,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .payment-history-progress { display: grid; gap: 10px; margin-bottom: 18px; padding: 14px 16px; }
 .payment-history-progress > div:first-child { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
 .payment-history-progress span { color: var(--color-muted); }
+.payment-history-stats, .payment-history-stat { min-width: 0; }
 .payment-evidence-list { display: grid; gap: 7px; padding-top: 5px; font-size: 12px; }
 .receipt-link { display: inline-flex; align-items: center; gap: 6px; width: fit-content; color: var(--color-primary); text-decoration: none; }
 .receipt-download { width: fit-content; min-height: 38px; padding: 7px 11px; font-size: 12px; }
@@ -444,6 +445,24 @@ input[type="number"] {
   .page-header-actions .btn { flex: 1; justify-content: center; }
   .dashboard-grid, .dashboard-metrics { grid-template-columns: 1fr; }
   .payment-history-progress > div:first-child { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .payment-history-banner { display: grid !important; grid-template-columns: 44px minmax(0, 1fr); gap: 12px !important; padding: 16px !important; }
+  .payment-history-banner-icon { width: 44px !important; height: 44px !important; border-radius: 12px !important; }
+  .payment-history-banner-copy { min-width: 0 !important; }
+  .payment-history-banner-copy > div:nth-child(2) { font-size: 19px !important; overflow-wrap: anywhere; }
+  .payment-history-banner-metrics, .payment-history-banner .payment-progress-wrap { grid-column: 1 / -1; width: 100%; min-width: 0; }
+  .payment-history-banner-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px 14px !important; }
+  .payment-history-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .payment-history-stat:nth-child(3) { grid-column: 1 / -1; }
+  .payment-history-stat > div:last-child { overflow-wrap: anywhere; }
+  .payment-history-row-main { display: grid !important; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 8px 10px !important; align-items: center !important; padding: 14px !important; }
+  .payment-history-status-dot { grid-column: 1; grid-row: 1 / span 2; }
+  .payment-history-amount { grid-column: 2; grid-row: 1; min-width: 0 !important; font-size: 15px !important; }
+  .payment-history-method { grid-column: 2; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; }
+  .payment-history-dates { grid-column: 2; grid-row: 3; min-width: 0; }
+  .payment-history-dates span { display: block; overflow-wrap: anywhere; }
+  .payment-history-dates span + span { margin: 3px 0 0 !important; }
+  .payment-history-status { grid-column: 3; grid-row: 1; max-width: 132px; justify-self: end; padding: 4px 8px !important; text-align: center; }
+  .payment-history-expand { grid-column: 3; grid-row: 3; justify-self: end; }
   .dashboard-room-card, .dashboard-status-card { min-height: 0; }
   .dashboard-section { margin-top: 28px; }
   .site-footer-inner { grid-template-columns: 1fr; gap: 20px; padding: 26px 0; }

@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, FormEvent } from "react";
 import { X, Download, Pencil, Trash2, Undo2 } from "lucide-react";
 import { api, StudentRow, StudentDetail, SemesterRow, Room, ApiError } from "../lib/api";
-import { StatusBadge, fmt } from "../lib/format";
+import { StatusBadge, fmt, formatMoneyInput, parseMoneyInput } from "../lib/format";
 import { useAuth } from "../context/AuthContext";
 
 function StudentDetailModal({ studentId, onClose, onDeleted }: { studentId: string; onClose: () => void; onDeleted: () => void }) {
@@ -13,6 +13,9 @@ function StudentDetailModal({ studentId, onClose, onDeleted }: { studentId: stri
   const [yearOfStudy, setYearOfStudy] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busyPaymentId, setBusyPaymentId] = useState<string | null>(null);
+  const [correction, setCorrection] = useState<{ paymentId: string; currentAmount: number } | null>(null);
+  const [correctionAmount, setCorrectionAmount] = useState("");
+  const [correctionReason, setCorrectionReason] = useState("");
   const [enrolling, setEnrolling] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -28,19 +31,18 @@ function StudentDetailModal({ studentId, onClose, onDeleted }: { studentId: stri
     }
   }, [detail]);
 
-  async function handleCorrect(paymentId: string, currentAmount: number) {
-    const reason = prompt("Reason for this correction (required, shown to the student):");
-    if (!reason) return;
-    const newAmountStr = prompt(`New amount (currently UGX ${currentAmount.toLocaleString()}):`, String(currentAmount));
-    if (!newAmountStr) return;
-    const newAmount = Number(newAmountStr);
+  async function handleCorrect(e: FormEvent) {
+    e.preventDefault();
+    if (!correction || !correctionReason.trim()) return;
+    const newAmount = parseMoneyInput(correctionAmount);
     if (!Number.isFinite(newAmount) || newAmount <= 0) {
       alert("Enter a valid positive amount.");
       return;
     }
-    setBusyPaymentId(paymentId);
+    setBusyPaymentId(correction.paymentId);
     try {
-      await api.correctPayment(paymentId, reason, newAmount);
+      await api.correctPayment(correction.paymentId, correctionReason.trim(), newAmount);
+      setCorrection(null);
       load();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Failed to correct payment.");
@@ -189,14 +191,49 @@ function StudentDetailModal({ studentId, onClose, onDeleted }: { studentId: stri
                     {p.paymentMethod} · {new Date(p.paymentDate).toLocaleDateString()}
                   </div>
                   {p.status === "verified" && (
-                    <button
-                      disabled={busyPaymentId === p.id}
-                      onClick={() => handleCorrect(p.id, p.amount)}
-                      className="btn btn-outline"
-                      style={{ marginTop: 8, fontSize: 11.5, padding: "5px 10px" }}
-                    >
-                      {busyPaymentId === p.id ? "Correcting..." : "Correct this payment"}
-                    </button>
+                    <>
+                      <button
+                        disabled={busyPaymentId === p.id}
+                        onClick={() => {
+                          setCorrection({ paymentId: p.id, currentAmount: p.amount });
+                          setCorrectionAmount(formatMoneyInput(String(p.amount)));
+                          setCorrectionReason("");
+                        }}
+                        className="btn btn-outline"
+                        style={{ marginTop: 8, fontSize: 11.5, padding: "5px 10px" }}
+                      >
+                        {busyPaymentId === p.id ? "Correcting..." : "Correct this payment"}
+                      </button>
+                      {correction?.paymentId === p.id && (
+                        <form onSubmit={handleCorrect} style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                          <label style={{ fontSize: 11.5, fontWeight: 600 }}>
+                            Corrected amount (UGX; currently {fmt(correction.currentAmount)})
+                            <input
+                              className="input"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9,]*"
+                              required
+                              value={correctionAmount}
+                              onChange={(e) => setCorrectionAmount(formatMoneyInput(e.target.value))}
+                              style={{ marginTop: 4 }}
+                            />
+                          </label>
+                          <label style={{ fontSize: 11.5, fontWeight: 600 }}>
+                            Reason (shown to the student)
+                            <textarea className="input" required value={correctionReason} onChange={(e) => setCorrectionReason(e.target.value)} style={{ marginTop: 4 }} />
+                          </label>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button type="submit" disabled={busyPaymentId === p.id} className="btn btn-primary" style={{ fontSize: 11.5, padding: "5px 10px" }}>
+                              {busyPaymentId === p.id ? "Saving..." : "Save correction"}
+                            </button>
+                            <button type="button" onClick={() => setCorrection(null)} className="btn btn-outline" style={{ fontSize: 11.5, padding: "5px 10px" }}>
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </>
                   )}
                 </div>
               ))}

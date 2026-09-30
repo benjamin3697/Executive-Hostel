@@ -4,6 +4,13 @@ export const formatUGX = (amount: number) =>
 export const fmt = (n: number | null | undefined) =>
   n === null || n === undefined ? "—" : formatUGX(Number(n) || 0);
 
+export const formatMoneyInput = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+export const parseMoneyInput = (value: string) => Number(value.replace(/,/g, ""));
+
 export const STATUS_COLORS: Record<string, { bg: string; fg: string }> = {
   fully_paid: { bg: "var(--color-accent-soft)", fg: "var(--color-accent)" },
   verified: { bg: "var(--color-accent-soft)", fg: "var(--color-accent)" },

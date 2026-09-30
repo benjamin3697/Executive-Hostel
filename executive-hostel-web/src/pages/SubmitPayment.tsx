@@ -2,7 +2,7 @@ import { useEffect, useState, FormEvent } from "react";
 import { Upload, Landmark, Phone } from "lucide-react";
 import { api, ApiError, PaymentSummary } from "../lib/api";
 import { uploadFileToSupabase } from "../lib/supabase";
-import { fmt } from "../lib/format";
+import { fmt, formatMoneyInput, parseMoneyInput } from "../lib/format";
 
 export default function SubmitPayment() {
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
@@ -29,7 +29,8 @@ export default function SubmitPayment() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!amount || Number(amount) <= 0) {
+    const numericAmount = parseMoneyInput(amount);
+    if (!amount || numericAmount <= 0) {
       setError("Enter the amount you paid.");
       return;
     }
@@ -42,7 +43,7 @@ export default function SubmitPayment() {
       const fileType = file.type === "application/pdf" ? "pdf" : "image";
       const evidenceUrl = await uploadFileToSupabase(file);
       await api.submitPayment({
-        amount: Number(amount),
+        amount: numericAmount,
         paymentMethod: method,
         paymentDate: new Date(date).toISOString(),
         transactionReference: reference || undefined,
@@ -119,11 +120,11 @@ export default function SubmitPayment() {
           className="input"
           type="text"
           inputMode="numeric"
-          pattern="[0-9]*"
-          placeholder="e.g. 650000"
+          pattern="[0-9,]*"
+          placeholder="e.g. 650,000"
           required
           value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+          onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
           style={{ marginBottom: 12 }}
         />
 

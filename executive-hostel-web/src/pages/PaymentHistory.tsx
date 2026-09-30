@@ -57,12 +57,12 @@ function BalanceBanner({ summary }: { summary: PaymentSummary }) {
   const status = overallPaymentStatus(summary);
 
   return (
-    <div style={{
+    <div className="payment-history-banner" style={{
       borderRadius: 16, padding: "20px 24px", marginBottom: 24,
       background: bgColor, border: `1.5px solid ${accentColor}`,
       display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center",
     }}>
-      <div style={{
+      <div className="payment-history-banner-icon" style={{
         width: 52, height: 52, borderRadius: 14, flexShrink: 0,
         background: bgColor, border: `2px solid ${accentColor}`,
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -70,7 +70,7 @@ function BalanceBanner({ summary }: { summary: PaymentSummary }) {
         {isFullyPaid ? <CheckCircle2 size={26} color={accentColor} /> : <Wallet size={26} color={accentColor} />}
       </div>
 
-      <div style={{ flex: 1, minWidth: 180 }}>
+      <div className="payment-history-banner-copy" style={{ flex: 1, minWidth: 180 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: accentColor, textTransform: "uppercase", letterSpacing: "0.07em" }}>
           {isFullyPaid ? "All Cleared!" : isOutstanding ? "Payment Outstanding" : "Partially Paid"}
         </div>
@@ -85,7 +85,7 @@ function BalanceBanner({ summary }: { summary: PaymentSummary }) {
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 20px" }}>
+      <div className="payment-history-banner-metrics" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 20px" }}>
         {[
           { label: summary.carriedBalance > 0 ? "Semester Fee" : "Total Fee", val: summary.fee },
           { label: "Verified Paid",    val: summary.verifiedPaid },
@@ -114,6 +114,7 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
     <div className="card" style={{ padding: 0, overflow: "hidden", transition: "box-shadow 0.15s" }}>
       {/* Main row */}
       <div
+        className="payment-history-row-main"
         style={{
           display: "flex", alignItems: "center", gap: 14, padding: "14px 18px",
           cursor: hasDetail ? "pointer" : "default",
@@ -121,16 +122,16 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
         onClick={() => hasDetail && setOpen(o => !o)}
       >
         {/* Status dot */}
-        <div style={{
+        <div className="payment-history-status-dot" style={{
           width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
           background: sm.color, boxShadow: `0 0 6px ${sm.color}88`,
         }} />
 
         {/* Amount */}
-        <div style={{ fontWeight: 800, fontSize: 16, minWidth: 110 }}>{fmt(p.amount)}</div>
+        <div className="payment-history-amount" style={{ fontWeight: 800, fontSize: 16, minWidth: 110 }}>{fmt(p.amount)}</div>
 
         {/* Method pill */}
-        <div style={{
+        <div className="payment-history-method" style={{
           display: "flex", alignItems: "center", gap: 5, padding: "4px 10px",
           borderRadius: 20, background: "var(--color-surface-raised, #1a1a2e)",
           fontSize: 12, color: "var(--color-muted)", flexShrink: 0,
@@ -139,13 +140,13 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
         </div>
 
         {/* Dates */}
-        <div style={{ flex: 1, fontSize: 12, color: "var(--color-muted)" }}>
+        <div className="payment-history-dates" style={{ flex: 1, fontSize: 12, color: "var(--color-muted)" }}>
           <span>Payment date: <strong style={{ color: "var(--color-text)" }}>{fmtDate(p.paymentDate)}</strong></span>
           <span style={{ marginLeft: 12, opacity: 0.7 }}>Submitted: {fmtDate(p.submittedAt)}</span>
         </div>
 
         {/* Status badge */}
-        <div style={{
+        <div className="payment-history-status" style={{
           display: "flex", alignItems: "center", gap: 5,
           padding: "4px 10px", borderRadius: 20,
           background: `${sm.color}18`, color: sm.color,
@@ -156,7 +157,7 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
 
         {/* Expand chevron */}
         {hasDetail && (
-          <div style={{ color: "var(--color-muted)", flexShrink: 0 }}>
+          <div className="payment-history-expand" style={{ color: "var(--color-muted)", flexShrink: 0 }}>
             {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </div>
         )}
@@ -269,13 +270,13 @@ export default function PaymentHistory() {
 
       {/* Quick Stats */}
       {payments && payments.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+        <div className="payment-history-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 20 }}>
           {[
             { label: "Total Submitted",   value: payments.length,       icon: <Receipt     size={16} />, color: "var(--color-primary)" },
             { label: "Verified Amount",   value: formatUGX(totalVerified), icon: <TrendingUp  size={16} />, color: "var(--color-accent)"  },
             { label: "Pending Amount",    value: formatUGX(totalPending),  icon: <Clock       size={16} />, color: "var(--color-warning)" },
           ].map(stat => (
-            <div key={stat.label} className="card" style={{ padding: "12px 14px" }}>
+            <div key={stat.label} className="card payment-history-stat" style={{ padding: "12px 14px", minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, color: stat.color }}>
                 {stat.icon}
                 <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{stat.label}</span>

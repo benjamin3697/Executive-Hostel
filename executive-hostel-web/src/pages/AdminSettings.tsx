@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { api, ContactRow, AcademicYearRow, SemesterRow, FeeRow, ApiError } from "../lib/api";
+import { formatMoneyInput, parseMoneyInput } from "../lib/format";
 
 const PAYMENT_KEYS = [
   { key: "bank_name", label: "Bank Name" },
@@ -122,7 +123,7 @@ export default function AdminSettings() {
     try {
       await api.createFee({
         roomTypeId: newFeeRoomTypeId,
-        amount: Number(newFeeAmount),
+        amount: parseMoneyInput(newFeeAmount),
         semesterId: newFeeSemesterId || undefined,
       });
       setNewFeeAmount("");
@@ -245,7 +246,7 @@ export default function AdminSettings() {
           placeholder="Amount (UGX)"
           required
           value={newFeeAmount}
-          onChange={(e) => setNewFeeAmount(e.target.value.replace(/[^\d]/g, ""))}
+          onChange={(e) => setNewFeeAmount(formatMoneyInput(e.target.value))}
           style={{ flex: "1 1 140px" }}
         />
         <button type="submit" className="btn btn-outline">Add Fee</button>

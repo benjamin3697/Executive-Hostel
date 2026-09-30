@@ -232,7 +232,7 @@ submitPayment: (payload: {
 
   // ---- Applications ----
   submitApplication: (payload: Record<string, unknown>) => apiFetch("/api/v1/applications", { method: "POST", body: payload }),
-  applications: (query: { status?: string; page?: number }) =>
+  applications: (query: { status?: string; page?: number; pageSize?: number }) =>
     apiFetch<{ total: number; applications: ApplicationRow[] }>("/api/v1/applications", { query }),
   approveApplication: (id: string) =>
     apiFetch<
@@ -410,7 +410,7 @@ export interface PaymentHistoryRow {
 export interface ApplicationRow {
   id: string; fullName: string; phone: string; email: string | null;
   registrationNumber: string | null; course: string | null; status: string; createdAt: string;
-  preferredRoom?: { roomNumber: string; section: { name: string } } | null;
+  preferredRoom?: { id: string; roomNumber: string; section: { name: string } } | null;
 }
 
 export interface AnnouncementRow {

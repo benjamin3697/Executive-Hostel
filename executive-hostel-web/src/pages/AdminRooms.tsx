@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Building2, X, Search } from "lucide-react";
-import { api, Room, StudentRow, ApiError } from "../lib/api";
+import { api, ApplicationRow, Room, StudentRow, ApiError } from "../lib/api";
 
 const STATUS_STYLE: Record<string, { label: string; bg: string; fg: string }> = {
   occupied: { label: "Occupied", bg: "var(--color-accent-soft)", fg: "var(--color-accent)" },
@@ -14,8 +14,8 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; fg: string }> = 
 // Student picker - opened when assigning a vacant room. Searches
 // GET /students (debounced) and hands the chosen student back to the caller.
 // ---------------------------------------------------------------------------
-function StudentPicker({ onPick, onClose }: { onPick: (student: StudentRow) => void; onClose: () => void }) {
-  const [q, setQ] = useState("");
+function StudentPicker({ initialSearch, onPick, onClose }: { initialSearch?: string; onPick: (student: StudentRow) => void; onClose: () => void }) {
+  const [q, setQ] = useState(initialSearch ?? "");
   const [results, setResults] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -81,10 +81,11 @@ function StudentPicker({ onPick, onClose }: { onPick: (student: StudentRow) => v
 
 export default function AdminRooms() {
   const [rooms, setRooms] = useState<Room[] | null>(null);
+  const [approvedApplications, setApprovedApplications] = useState<ApplicationRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [section, setSection] = useState<string | undefined>();
   const [status, setStatus] = useState<string | undefined>();
-  const [pickerForRoom, setPickerForRoom] = useState<Room | null>(null);
+  const [pickerForRoom, setPickerForRoom] = useState<{ room: Room; applicant?: ApplicationRow } | null>(null);
   const [busyRoomId, setBusyRoomId] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -94,6 +95,24 @@ export default function AdminRooms() {
   }, [section, status]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    let active = true;
+    const pageSize = 100;
+    api.applications({ status: "approved", page: 1, pageSize })
+      .then(async (firstPage) => {
+        const pageCount = Math.ceil(firstPage.total / pageSize);
+        const remainingPages = await Promise.all(
+          Array.from({ length: pageCount - 1 }, (_, index) =>
+            api.applications({ status: "approved", page: index + 2, pageSize })
+          )
+        );
+        return [...firstPage.applications, ...remainingPages.flatMap((page) => page.applications)];
+      })
+      .then((applications) => { if (active) setApprovedApplications(applications); })
+      .catch(() => { if (active) setApprovedApplications([]); });
+    return () => { active = false; };
+  }, []);
 
   async function handleAssign(room: Room, student: StudentRow) {
     setPickerForRoom(null);
@@ -184,19 +203,31 @@ export default function AdminRooms() {
             {list.map((r) => {
               const style = STATUS_STYLE[r.status] ?? STATUS_STYLE.vacant;
               const busy = busyRoomId === r.id;
+              const requests = approvedApplications.filter((application) => application.preferredRoom?.id === r.id);
+              const isRequested = r.status === "vacant" && requests.length > 0;
               return (
-                <div key={r.id} className="card" style={{ borderLeft: `4px solid ${style.fg}` }}>
+                <div key={r.id} className="card" style={{ border: isRequested ? "2px solid var(--color-accent)" : undefined, borderLeft: `4px solid ${isRequested ? "var(--color-accent)" : style.fg}`, background: isRequested ? "var(--color-accent-soft)" : undefined }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <span className="font-display" style={{ fontSize: 18, fontWeight: 600 }}>Room {r.roomNumber}</span>
-                    <span className="badge" style={{ background: style.bg, color: style.fg }}>{style.label}</span>
+                    <span className="badge" style={{ background: isRequested ? "#fff" : style.bg, color: isRequested ? "var(--color-accent)" : style.fg }}>{isRequested ? "Requested" : style.label}</span>
                   </div>
                   <div style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 8 }}>{r.roomType.name}</div>
+                  {isRequested && (
+                    <div style={{ fontSize: 12, marginBottom: 10 }}>
+                      <strong>Approved request{requests.length > 1 ? "s" : ""}</strong>
+                      {requests.map((application) => (
+                        <div key={application.id} style={{ marginTop: 3, color: "var(--color-text)" }}>
+                          {application.fullName}{application.registrationNumber ? ` · ${application.registrationNumber}` : ""}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {r.currentStudent && (
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{r.currentStudent.fullName}</div>
                   )}
 
                   {r.status === "vacant" && (
-                    <button disabled={busy} onClick={() => setPickerForRoom(r)} className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "6px 10px" }}>
+                    <button disabled={busy} onClick={() => setPickerForRoom({ room: r, applicant: requests[0] })} className="btn btn-primary" style={{ width: "100%", justifyContent: "center", fontSize: 12, padding: "6px 10px" }}>
                       {busy ? "Assigning..." : "Assign Student"}
                     </button>
                   )}
@@ -219,7 +250,8 @@ export default function AdminRooms() {
 
       {pickerForRoom && (
         <StudentPicker
-          onPick={(student) => handleAssign(pickerForRoom, student)}
+          initialSearch={pickerForRoom.applicant?.fullName}
+          onPick={(student) => handleAssign(pickerForRoom.room, student)}
           onClose={() => setPickerForRoom(null)}
         />
       )}

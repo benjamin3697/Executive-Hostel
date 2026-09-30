@@ -5,12 +5,9 @@ import {
   ZoomIn, X, Eye, ChevronDown, ChevronUp, RefreshCw,
 } from "lucide-react";
 import { api, Payment, PaymentEvidence, ApiError } from "../lib/api";
+import { formatMoneyInput, parseMoneyInput } from "../lib/format";
 
 const fmt = (n: number) => "UGX " + n.toLocaleString();
-const formatAmountInput = (value: string) => {
-  const digits = value.replace(/\D/g, "");
-  return digits ? Number(digits).toLocaleString("en-US") : "";
-};
 
 // ─── Full-screen lightbox ──────────────────────────────────────────────────────
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
@@ -382,7 +379,7 @@ export default function AdminPayments() {
   async function handleManualPayment(e: React.FormEvent) {
     e.preventDefault();
     if (!manualStudentId || !manualAmount) return;
-    const amount = Number(manualAmount.replace(/,/g, ""));
+    const amount = parseMoneyInput(manualAmount);
     if (!Number.isSafeInteger(amount) || amount <= 0) return;
     setManualBusy(true);
     try {
@@ -490,7 +487,7 @@ export default function AdminPayments() {
                 pattern="[0-9,]*"
                 type="text"
                 value={manualAmount}
-                onChange={(e) => setManualAmount(formatAmountInput(e.target.value))}
+                onChange={(e) => setManualAmount(formatMoneyInput(e.target.value))}
                 placeholder="e.g. 650,000"
                 style={{ marginTop: 6 }}
               />
