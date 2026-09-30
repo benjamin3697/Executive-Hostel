@@ -1,7 +1,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import { Upload, Wrench } from "lucide-react";
 import { api, MaintenanceRow, ApiError } from "../lib/api";
-import { uploadFileToSupabase } from "../lib/supabase";
+import { uploadFileToB2 } from "../lib/storage";
 import { StatusBadge } from "../lib/format";
 
 const CATEGORIES = ["electricity", "water", "plumbing", "door_lock", "lighting", "furniture", "cleaning", "internet", "other"];
@@ -24,7 +24,7 @@ export default function Maintenance() {
     setSubmitting(true);
     setError(null);
     try {
-      const imageUrl = image ? await uploadFileToSupabase(image) : undefined;
+      const imageUrl = image ? await uploadFileToB2(image, "maintenance-photos") : undefined;
       await api.submitMaintenance({ category, description, imageUrl });
       setDescription("");
       setImage(null);
@@ -69,6 +69,7 @@ export default function Maintenance() {
               <StatusBadge status={r.status} />
             </div>
             <div style={{ fontSize: 13, color: "var(--color-muted)" }}>{r.description}</div>
+            {r.imageDownloadUrl && <a href={r.imageDownloadUrl} target="_blank" rel="noreferrer">View attached photo</a>}
             <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>{new Date(r.createdAt).toLocaleDateString()}</div>
           </div>
         ))}

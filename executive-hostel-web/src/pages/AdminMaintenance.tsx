@@ -63,6 +63,7 @@ export default function AdminMaintenance() {
               <StatusBadge status={r.status} label={r.status.replace(/_/g, " ")} />
             </div>
             <p style={{ fontSize: 13, margin: "8px 0" }}>{r.description}</p>
+            {r.imageDownloadUrl && <a href={r.imageDownloadUrl} target="_blank" rel="noreferrer">View attached photo</a>}
             <div className="mobile-record-actions">
               {r.status === "submitted" && (
                 <button disabled={busyId === r.id} className="btn btn-outline" onClick={() => advance(r.id, "in_progress")}>Start Work</button>

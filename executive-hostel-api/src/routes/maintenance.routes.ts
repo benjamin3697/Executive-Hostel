@@ -6,6 +6,7 @@ import { requireRole, requireSelfOrRole } from "../middleware/authorize";
 import { recordAudit } from "../services/audit.service";
 import { notifyByEmail, notifyByEmailOrSms } from "../services/notify.service";
 import { env } from "../lib/env";
+import { getEvidenceDownloadUrl } from "../lib/storage";
 
 export const maintenanceRouter = Router();
 maintenanceRouter.use(authenticate);
@@ -14,16 +15,12 @@ const CATEGORIES = ["electricity", "water", "plumbing", "door_lock", "lighting",
 
 // ---------------------------------------------------------------------------
 // POST / - student submits a request against their own current room.
-// Reuses createEvidenceUploadPost-style flow isn't needed here since photos
-// are optional and lower-stakes than payment evidence; imageUrl is just a
-// bucket key the client uploads beforehand via the same presigned-upload
-// pattern as payments (POST /payments/evidence-upload-url works generically -
-// it isn't payment-specific despite the route living under /payments).
+// Photos use private B2 object keys issued by the authenticated storage route.
 // ---------------------------------------------------------------------------
 const createSchema = z.object({
   category: z.enum(CATEGORIES),
   description: z.string().min(3).max(2000),
-  imageUrl: z.string().max(500).optional(),
+  imageUrl: z.string().min(1).max(500).optional(),
 });
 
 maintenanceRouter.post("/", requireRole("student"), async (req: AuthenticatedRequest, res) => {
@@ -33,6 +30,9 @@ maintenanceRouter.post("/", requireRole("student"), async (req: AuthenticatedReq
   }
   const student = await prisma.student.findUnique({ where: { userId: req.user!.id } });
   if (!student) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Student profile not found." } });
+  if (parsed.data.imageUrl && !parsed.data.imageUrl.startsWith(`maintenance-photos/${student.id}/`)) {
+    return res.status(400).json({ error: { code: "INVALID_IMAGE_KEY", message: "Maintenance photos must be uploaded to your own storage area." } });
+  }
   if (!student.currentRoomId) {
     return res.status(409).json({ error: { code: "NO_ROOM_ASSIGNED", message: "You need an assigned room before submitting a maintenance request." } });
   }
@@ -74,7 +74,10 @@ maintenanceRouter.get("/me", requireRole("student"), async (req: AuthenticatedRe
     where: { studentId: student.id },
     orderBy: { createdAt: "desc" },
   });
-  res.json(requests);
+  res.json(await Promise.all(requests.map(async (request) => ({
+    ...request,
+    imageDownloadUrl: request.imageUrl ? await getEvidenceDownloadUrl(request.imageUrl) : null,
+  }))));
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +108,15 @@ maintenanceRouter.get("/", requireRole("administrator", "landlady"), async (req,
     }),
   ]);
 
-  res.json({ total, page, pageSize, requests });
+  res.json({
+    total,
+    page,
+    pageSize,
+    requests: await Promise.all(requests.map(async (request) => ({
+      ...request,
+      imageDownloadUrl: request.imageUrl ? await getEvidenceDownloadUrl(request.imageUrl) : null,
+    }))),
+  });
 });
 
 async function ownerUserIdForRequestParam(req: AuthenticatedRequest): Promise<string | null> {
@@ -122,7 +133,10 @@ maintenanceRouter.get(
       include: { student: true, room: { include: { section: true } } },
     });
     if (!request) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Maintenance request not found." } });
-    res.json(request);
+    res.json({
+      ...request,
+      imageDownloadUrl: request.imageUrl ? await getEvidenceDownloadUrl(request.imageUrl) : null,
+    });
   }
 );
 

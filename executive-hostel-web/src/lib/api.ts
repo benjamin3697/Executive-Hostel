@@ -222,6 +222,8 @@ export const api = {
     apiFetch(`/api/v1/payments/${id}/correct`, { method: "POST", body: { reason, newAmount } }),
   recordManualPayment: (payload: { studentId: string; amount: number; paymentDate: string; payerName?: string; remarks?: string }) =>
     apiFetch<Payment>("/api/v1/payments/manual", { method: "POST", body: payload }),
+  createStorageUploadUrl: (payload: { purpose: "payment-evidence" | "maintenance-photos"; contentType: string; contentLength: number }) =>
+    apiFetch<{ key: string; url: string; contentType: string; maxBytes: number }>("/api/v1/storage/upload-url", { method: "POST", body: payload }),
 submitPayment: (payload: {
     amount: number; paymentMethod: string; paymentDate: string;
     transactionReference?: string; payerName?: string; remarks?: string;
@@ -420,6 +422,7 @@ export interface AnnouncementRow {
 
 export interface MaintenanceRow {
   id: string; category: string; description: string; status: string; createdAt: string;
+  imageUrl?: string | null; imageDownloadUrl?: string | null;
   student?: { fullName: string }; room?: { roomNumber: string; section: { name: string } } | null;
 }
 

@@ -24,31 +24,40 @@ const ALLOWED_EVIDENCE_TYPES = {
 export type EvidenceFileType = keyof typeof ALLOWED_EVIDENCE_TYPES;
 
 /**
- * Generates a presigned PUT URL so the student's browser uploads
- * directly to the bucket - the file's bytes never touch our API server.
- * Uses PUT instead of POST, which Backblaze B2's S3 API properly supports.
- *
- * Returns the object key (store this on PaymentEvidence.fileUrl) plus the
- * signed URL the client PUTs the file to.
+ * Generates a short-lived upload URL for files owned by the authenticated student.
  */
-export async function createEvidenceUploadPost(params: { studentId: string; fileType: EvidenceFileType }) {
-  const { studentId, fileType } = params;
+export async function createStorageUploadUrl(params: {
+  studentId: string;
+  purpose: "payment-evidence" | "maintenance-photos";
+  contentType: string;
+  contentLength: number;
+}) {
+  const { studentId, purpose, contentType, contentLength } = params;
+  const fileType: EvidenceFileType = contentType === "application/pdf" ? "pdf" : "image";
   const allowedContentTypes = ALLOWED_EVIDENCE_TYPES[fileType];
-  const extension = fileType === "pdf" ? "pdf" : "jpg";
-  const key = `payment-evidence/${studentId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  if (!allowedContentTypes.includes(contentType as never) || (purpose === "maintenance-photos" && fileType !== "image")) {
+    throw new Error("Unsupported file type.");
+  }
+  const extensionByContentType: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/heic": "heic",
+    "application/pdf": "pdf",
+  };
+  const key = `${purpose}/${studentId}/${Date.now()}-${crypto.randomUUID()}.${extensionByContentType[contentType]}`;
 
-  const contentType = fileType === "pdf" ? "application/pdf" : "image/jpeg";
-  
   const url = await getSignedUrl(s3, 
     new PutObjectCommand({
       Bucket: env.s3Bucket,
       Key: key,
       ContentType: contentType,
+      ContentLength: contentLength,
     }),
     { expiresIn: 300 } // presigned URL valid for 5 minutes
   );
 
-  return { key, url, allowedContentTypes, maxBytes: env.s3MaxUploadBytes };
+  return { key, url, contentType, maxBytes: env.s3MaxUploadBytes };
 }
 
 /**
@@ -58,9 +67,7 @@ export async function createEvidenceUploadPost(params: { studentId: string; file
  * this after confirming the requester is the submitting student, a
  * verifying admin, or the landlady (docs Section 58).
  *
- * NOTE: If the stored fileUrl is already a public Supabase Storage URL
- * (starts with http/https), it is returned unchanged — no S3 presigning
- * needed for public buckets.
+ * Existing Supabase URLs are returned as-is so historical records keep working.
  */
 export async function getEvidenceDownloadUrl(key: string): Promise<string> {
   // Already a full URL (e.g. Supabase public URL) — return as-is.

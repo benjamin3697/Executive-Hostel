@@ -1,7 +1,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import { Upload, Landmark, Phone } from "lucide-react";
 import { api, ApiError, PaymentSummary } from "../lib/api";
-import { uploadFileToSupabase } from "../lib/supabase";
+import { uploadFileToB2 } from "../lib/storage";
 import { fmt, formatMoneyInput, parseMoneyInput } from "../lib/format";
 
 export default function SubmitPayment() {
@@ -41,7 +41,7 @@ export default function SubmitPayment() {
     setSubmitting(true);
     try {
       const fileType = file.type === "application/pdf" ? "pdf" : "image";
-      const evidenceUrl = await uploadFileToSupabase(file);
+      const evidenceUrl = await uploadFileToB2(file, "payment-evidence");
       await api.submitPayment({
         amount: numericAmount,
         paymentMethod: method,

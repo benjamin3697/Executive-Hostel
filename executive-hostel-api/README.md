@@ -91,12 +91,13 @@ The landlady role bypasses all permission checks implicitly — it's the one rol
 
 ## File storage (Backblaze B2, free tier)
 
-Payment evidence uploads go straight from the student's browser to a private bucket via a presigned POST — the file bytes never pass through this API server. Set up:
+Payment evidence and maintenance photos upload directly from the student's browser to a private bucket using short-lived presigned PUT URLs. The API issues URLs only for the authenticated student's storage prefix, enforces the configured size limit, and returns short-lived download URLs after authorization. The file bytes never pass through this API server. Set up:
 
 1. Sign up at [backblaze.com/b2](https://www.backblaze.com/cloud-storage) — free tier is 10GB storage + 1GB/day download, no card required.
 2. Create a bucket and set it to **Private** (not public) — this is non-negotiable, it's where payment screenshots live.
 3. Create an Application Key scoped to just that bucket.
 4. Copy the endpoint/region shown on the bucket page into `.env` (see `.env.example` — the values look like `https://s3.us-west-004.backblazeb2.com` / `us-west-004`).
+5. Configure the bucket's CORS rules to allow `PUT` and `GET` from the local frontend origin and deployed Vercel origin, with the `Content-Type` request header allowed. Keep the bucket private; do not add `*` as an allowed origin in production.
 
 Because the code talks to B2 through its S3-compatible API (`src/lib/storage.ts`), switching to DigitalOcean Spaces or AWS S3 later is just different `.env` values — no code changes. If B2's free tier ever gets tight (very unlikely at 72 rooms' worth of payment screenshots), putting Cloudflare in front of the bucket makes B2→Cloudflare egress free/unlimited under their Bandwidth Alliance.
 

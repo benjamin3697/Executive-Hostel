@@ -1,5 +1,7 @@
 # Supabase Integration Setup Guide
 
+> **Storage note:** This guide describes the previous Supabase Storage upload flow. New payment evidence and maintenance photo uploads use private Backblaze B2 storage; follow the B2 setup in `executive-hostel-api/README.md` instead. Supabase remains configured for the database.
+
 ## ✅ Completed Tasks
 - ✅ Supabase TypeScript client created: `executive-hostel-web/src/lib/supabase.ts`
 - ✅ Frontend build passes (npm run build)

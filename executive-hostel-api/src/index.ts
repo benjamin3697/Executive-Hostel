@@ -19,6 +19,7 @@ import { reportsRouter } from "./routes/reports.routes";
 import { auditRouter } from "./routes/audit.routes";
 import { notificationsRouter } from "./routes/notifications.routes";
 import { academicYearsRouter, semestersRouter } from "./routes/academic.routes";
+import { storageRouter } from "./routes/storage.routes";
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use("/api/v1/students", studentsRouter);
 app.use("/api/v1/admin/users", adminUsersRouter);
 app.use("/api/v1/fees", feesRouter);
 app.use("/api/v1/payments", paymentsRouter);
+app.use("/api/v1/storage", storageRouter);
 app.use("/api/v1/applications", applicationsRouter);
 app.use("/api/v1/announcements", announcementsRouter);
 app.use("/api/v1/maintenance", maintenanceRouter);

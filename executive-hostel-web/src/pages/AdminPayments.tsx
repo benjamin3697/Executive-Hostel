@@ -82,8 +82,7 @@ async function downloadBlob(url: string, filename: string) {
 
 // ─── Single evidence file tile ─────────────────────────────────────────────────
 function EvidenceTile({ ev, onPreview }: { ev: PaymentEvidence; onPreview: (url: string) => void }) {
-  // fileUrl is a public Supabase Storage URL — use it directly, no presigning needed.
-  const url = ev.fileUrl;
+  const url = ev.downloadUrl ?? ev.fileUrl;
   const isImage = ev.fileType === "image";
   const [downloading, setDownloading] = useState(false);
 
@@ -190,8 +189,6 @@ function PaymentCard({
 
   const hasEvidence = (payment.evidence?.length ?? 0) > 0;
 
-  // Files are stored in Supabase Storage as public URLs — no presigning needed.
-  // We already have everything we need from the list response.
   const evidenceToShow = payment.evidence ?? [];
 
   function toggleEvidence() {
@@ -205,9 +202,10 @@ function PaymentCard({
         const ev = evidenceToShow[i];
         const filename = `payment-receipt-${i + 1}.${ev.fileType === "pdf" ? "pdf" : "jpg"}`;
         try {
-          await downloadBlob(ev.fileUrl, filename);
+          const url = ev.downloadUrl ?? ev.fileUrl;
+          await downloadBlob(url, filename);
         } catch {
-          window.open(ev.fileUrl, "_blank", "noopener,noreferrer");
+          window.open(ev.downloadUrl ?? ev.fileUrl, "_blank", "noopener,noreferrer");
         }
         if (i < evidenceToShow.length - 1) await new Promise((r) => setTimeout(r, 400));
       }

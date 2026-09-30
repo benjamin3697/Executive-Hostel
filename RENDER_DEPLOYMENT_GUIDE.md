@@ -79,6 +79,10 @@ Payment evidence and maintenance photos are stored in S3. This is required for t
      - Key ID (access key)
      - Application Key (secret)
 
+4. **Configure Bucket CORS**
+    - Allow `PUT` and `GET` from the local frontend origin and your deployed Vercel origin.
+    - Allow the `Content-Type` request header. Keep the bucket private and do not use a wildcard origin in production.
+
 ---
 
 ## Step 4: Create Render Web Service

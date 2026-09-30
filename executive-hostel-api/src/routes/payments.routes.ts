@@ -47,21 +47,23 @@ paymentsRouter.get("/me", requireRole("student"), async (req: AuthenticatedReque
       include: { evidence: true },
       orderBy: { submittedAt: "desc" },
     });
-    res.json(payments);
+    res.json(await Promise.all(payments.map(async (payment) => ({
+      ...payment,
+      evidence: await Promise.all(payment.evidence.map(async (evidence) => ({
+        ...evidence,
+        downloadUrl: await getEvidenceDownloadUrl(evidence.fileUrl),
+      }))),
+    }))));
   } catch (err) {
     handlePaymentError(err, res);
   }
 });
 
 // ---------------------------------------------------------------------------
-// NOTE: Evidence upload is now handled directly by the frontend via Supabase Storage.
-// No presigned URL endpoint is needed. Students upload files directly to Supabase,
-// then submit the public URL to the backend.
-
 // ---------------------------------------------------------------------------
 // STEP 3 — student submits payment evidence -> Payment(status=PENDING)
 // (docs Section 13-14). Balance is NOT recalculated here - only on verify.
-// Evidence URLs are provided directly from Supabase Storage (no S3 keys).
+// Evidence object keys are issued by the authenticated storage upload endpoint.
 // ---------------------------------------------------------------------------
 const submitPaymentSchema = z.object({
   amount: z.number().positive(),
@@ -71,7 +73,7 @@ const submitPaymentSchema = z.object({
   payerName: z.string().max(150).optional(),
   remarks: z.string().max(1000).optional(),
   evidence: z.array(z.object({
-    url: z.string().url(),
+    url: z.string().min(1).max(500),
     fileType: z.enum(["image", "pdf"]),
   })).min(1, "At least one piece of payment evidence is required."),
 });
@@ -83,6 +85,9 @@ paymentsRouter.post("/", requireRole("student"), async (req: AuthenticatedReques
   }
   try {
     const student = await requireOwnStudent(req);
+    if (parsed.data.evidence.some((item) => !item.url.startsWith(`payment-evidence/${student.id}/`))) {
+      return res.status(400).json({ error: { code: "INVALID_EVIDENCE_KEY", message: "Payment evidence must be uploaded to your own storage area." } });
+    }
     const fee = await getCurrentFeeForStudent(student.id);
     const summary = await getStudentBalanceSummary(student.id);
 
@@ -234,7 +239,14 @@ paymentsRouter.get("/", requireRole("administrator", "landlady"), async (req, re
     }),
   ]);
 
-  res.json({ total, page, pageSize, payments });
+    const paymentsWithDownloadUrls = await Promise.all(payments.map(async (payment) => ({
+      ...payment,
+      evidence: await Promise.all(payment.evidence.map(async (evidence) => ({
+        ...evidence,
+        downloadUrl: await getEvidenceDownloadUrl(evidence.fileUrl),
+      }))),
+    })));
+    res.json({ total, page, pageSize, payments: paymentsWithDownloadUrls });
 });
 
 // ---------------------------------------------------------------------------
