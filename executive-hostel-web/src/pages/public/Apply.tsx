@@ -31,6 +31,7 @@ export default function Apply() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [roomError, setRoomError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,10 @@ export default function Apply() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!preferredRoomId) {
+      setRoomError("Please select a room before submitting your application.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     if (form.password !== form.confirmPassword) {
@@ -62,7 +67,7 @@ export default function Apply() {
         course,
         confirmPassword: undefined,
         yearOfStudy: form.yearOfStudy ? Number(form.yearOfStudy) : undefined,
-        preferredRoomId: preferredRoomId || undefined,
+        preferredRoomId,
         termsAccepted,
       });
       setSuccess(true);
@@ -108,11 +113,28 @@ export default function Apply() {
       <form onSubmit={handleSubmit} className="card">
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Preferred room</label>
-          <select className="input" value={preferredRoomId} onChange={(e) => setPreferredRoomId(e.target.value)}>
-            <option value="">No specific room (assign any available room)</option>
+          <select
+            className="input"
+            value={preferredRoomId}
+            required
+            aria-invalid={!!roomError}
+            aria-describedby="preferred-room-help"
+            onInvalid={(e) => {
+              e.preventDefault();
+              setRoomError("Please select a room before submitting your application.");
+            }}
+            onChange={(e) => {
+              setPreferredRoomId(e.target.value);
+              setRoomError(null);
+            }}
+          >
+            <option value="">Select a room</option>
             {rooms.map((room) => <option key={room.id} value={room.id}>{room.section} - Room {room.roomNumber} ({room.roomType})</option>)}
           </select>
-          <div style={{ fontSize: 11.5, color: "var(--color-muted)", marginTop: 5 }}>Room availability is confirmed when your application is submitted.</div>
+          <div id="preferred-room-help" style={{ fontSize: 11.5, color: "var(--color-muted)", marginTop: 5 }}>
+            {rooms.length ? "Choose a vacant room. Availability is confirmed when your application is submitted." : "No vacant rooms are available right now. Please contact the hostel."}
+          </div>
+          {roomError && <div role="alert" style={{ color: "var(--color-danger)", fontSize: 12.5, marginTop: 5 }}>{roomError}</div>}
         </div>
         {field("fullName", "Full name")}
         {field("registrationNumber", "University registration number", false, "text", {

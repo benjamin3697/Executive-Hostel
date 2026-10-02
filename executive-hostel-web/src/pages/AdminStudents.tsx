@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { X, Download, Pencil, Trash2, Undo2 } from "lucide-react";
 import { api, StudentRow, StudentDetail, SemesterRow, Room, ApiError } from "../lib/api";
 import { StatusBadge, fmt, formatMoneyInput, parseMoneyInput } from "../lib/format";
@@ -280,12 +281,13 @@ function downloadCsv(rows: StudentRow[]) {
 }
 
 export default function AdminStudents() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [students, setStudents] = useState<StudentRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [semesters, setSemesters] = useState<SemesterRow[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get("studentId"));
 
   const [q, setQ] = useState("");
   const [section, setSection] = useState("");
@@ -446,7 +448,17 @@ export default function AdminStudents() {
         </div>
       )}
 
-      {selectedId && <StudentDetailModal studentId={selectedId} onClose={() => setSelectedId(null)} onDeleted={load} />}
+      {selectedId && <StudentDetailModal
+        studentId={selectedId}
+        onClose={() => {
+          setSelectedId(null);
+          setSearchParams((current) => {
+            current.delete("studentId");
+            return current;
+          }, { replace: true });
+        }}
+        onDeleted={load}
+      />}
     </div>
   );
 }

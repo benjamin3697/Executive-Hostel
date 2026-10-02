@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { authenticate, AuthenticatedRequest } from "../middleware/authenticate";
 import { recordAudit } from "../services/audit.service";
@@ -17,6 +18,16 @@ meRouter.get("/", async (req: AuthenticatedRequest, res) => {
 
   const { passwordHash, ...safeUser } = user;
   res.json(safeUser);
+});
+
+meRouter.get("/whatsapp-group", async (req: AuthenticatedRequest, res) => {
+  if (req.user!.role !== "student") {
+    return res.status(403).json({ error: { code: "FORBIDDEN", message: "Only student accounts can access the hostel group invite." } });
+  }
+  const student = await prisma.student.findUnique({ where: { userId: req.user!.id }, select: { id: true } });
+  if (!student) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Student profile not found." } });
+
+  res.json({ inviteUrl: env.whatsappGroupInviteUrl || null });
 });
 
 // Fields a student is allowed to self-edit. Everything else in the Student

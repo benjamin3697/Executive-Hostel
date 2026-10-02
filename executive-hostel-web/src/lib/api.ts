@@ -162,6 +162,7 @@ export const api = {
   updateProfile: (payload: Partial<{ phone: string; email: string; course: string; yearOfStudy: number; homeDistrict: string; emergencyContactName: string; emergencyContactPhone: string }>) =>
     apiFetch("/api/v1/me/profile", { method: "PATCH", body: payload }),
   studentDashboard: () => apiFetch<StudentDashboard>("/api/v1/me/dashboard"),
+  whatsappGroupInvite: () => apiFetch<{ inviteUrl: string | null }>("/api/v1/me/whatsapp-group"),
 
   // ---- Rooms ----
   rooms: (query: { section?: string; type?: string; status?: string }) =>

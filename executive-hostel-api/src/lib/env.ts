@@ -35,4 +35,5 @@ export const env = {
   // logging in lib/sms.ts when unconfigured.
   atApiKey: process.env.AT_API_KEY || "",
   atUsername: process.env.AT_USERNAME || "sandbox",
+  whatsappGroupInviteUrl: process.env.WHATSAPP_GROUP_INVITE_URL || "",
 };

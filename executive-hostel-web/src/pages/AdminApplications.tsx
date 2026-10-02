@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { CheckCircle2, XCircle, Clock, Archive, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CheckCircle2, XCircle, Clock, Archive, Phone, DoorOpen } from "lucide-react";
 import { api, ApplicationRow, ApiError } from "../lib/api";
 import { StatusBadge } from "../lib/format";
 
@@ -8,7 +9,7 @@ export default function AdminApplications() {
   const [status, setStatus] = useState<string | undefined>("submitted");
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [approvedInfo, setApprovedInfo] = useState<{ message: string; password?: string } | null>(null);
+  const [approvedInfo, setApprovedInfo] = useState<{ message: string; password?: string; studentId: string } | null>(null);
 
   const load = useCallback(() => {
     api.applications({ status })
@@ -24,8 +25,8 @@ export default function AdminApplications() {
       const result = await api.approveApplication(id);
       setApprovedInfo(
         result.deliveryMethod === "manual"
-          ? { message: result.message, password: result.temporaryPassword }
-          : { message: result.message }
+          ? { message: result.message, password: result.temporaryPassword, studentId: result.studentId }
+          : { message: result.message, studentId: result.studentId }
       );
       load();
     } catch (err) {
@@ -62,7 +63,10 @@ export default function AdminApplications() {
               Temporary password: <code style={{ background: "#fff", padding: "2px 6px", borderRadius: 4 }}>{approvedInfo.password}</code>
             </p>
           )}
-          <p style={{ fontSize: 11.5, color: "var(--color-muted)" }}>You can now assign them a room from the Rooms page.</p>
+          <p style={{ fontSize: 11.5, color: "var(--color-muted)" }}>Assign a room first. Room Management will offer the enrollment step after assignment.</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+            <Link to={`/admin/rooms?studentId=${encodeURIComponent(approvedInfo.studentId)}`} className="btn btn-primary"><DoorOpen size={14} /> Assign room</Link>
+          </div>
           <button className="btn btn-outline" onClick={() => setApprovedInfo(null)} style={{ marginTop: 8 }}>Dismiss</button>
         </div>
       )}

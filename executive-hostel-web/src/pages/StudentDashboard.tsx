@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, ArrowRight, DoorOpen, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, DoorOpen, MessageCircle, Wrench } from "lucide-react";
 import { api, StudentDashboard as DashboardData, ApiError } from "../lib/api";
 import { EmptyState, ErrorState, LoadingState, PageContainer, PageHeader } from "../components/SiteUI";
 import { formatUGX } from "../lib/format";
@@ -17,11 +17,20 @@ const STATUS_LABEL: Record<string, string> = {
 export default function StudentDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [whatsappInviteUrl, setWhatsappInviteUrl] = useState<string | null>(null);
+  const [whatsappInviteLoaded, setWhatsappInviteLoaded] = useState(false);
 
   useEffect(() => {
     api.studentDashboard()
       .then(setData)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load dashboard."));
+  }, []);
+
+  useEffect(() => {
+    api.whatsappGroupInvite()
+      .then(({ inviteUrl }) => setWhatsappInviteUrl(inviteUrl))
+      .catch(() => setWhatsappInviteUrl(null))
+      .finally(() => setWhatsappInviteLoaded(true));
   }, []);
 
   if (error) return <PageContainer><ErrorState message={error} /></PageContainer>;
@@ -70,6 +79,23 @@ export default function StudentDashboard() {
           <Link to="/payments/history" className="text-link">View payment history <ArrowRight size={15} aria-hidden="true" /></Link>
         </section>
       </div>
+
+      <section className="dashboard-section">
+        <div className="section-heading"><div><span className="eyebrow">Community</span><h2>Hostel WhatsApp group</h2></div></div>
+        <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <strong>Connect with hostel residents</strong>
+            <p style={{ margin: "4px 0 0", color: "var(--color-muted)", fontSize: 13 }}>
+              {whatsappInviteLoaded
+                ? whatsappInviteUrl ? "Open the Executive Hostel WhatsApp group." : "The group invite is unavailable. Please contact hostel administration."
+                : "Loading group invite..."}
+            </p>
+          </div>
+          {whatsappInviteUrl && <a href={whatsappInviteUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            <MessageCircle size={16} aria-hidden="true" /> Join group
+          </a>}
+        </div>
+      </section>
 
       <section className="dashboard-section">
         <div className="section-heading"><div><span className="eyebrow">Account overview</span><h2>Fees at a glance</h2></div></div>

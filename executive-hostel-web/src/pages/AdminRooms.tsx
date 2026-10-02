@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { Building2, X, Search } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Building2, X, Search, GraduationCap } from "lucide-react";
 import { api, ApplicationRow, Room, StudentRow, ApiError } from "../lib/api";
 
 const STATUS_STYLE: Record<string, { label: string; bg: string; fg: string }> = {
@@ -14,7 +15,7 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; fg: string }> = 
 // Student picker - opened when assigning a vacant room. Searches
 // GET /students (debounced) and hands the chosen student back to the caller.
 // ---------------------------------------------------------------------------
-function StudentPicker({ initialSearch, onPick, onClose }: { initialSearch?: string; onPick: (student: StudentRow) => void; onClose: () => void }) {
+function StudentPicker({ initialSearch, targetStudentId, onPick, onClose }: { initialSearch?: string; targetStudentId?: string; onPick: (student: StudentRow) => void; onClose: () => void }) {
   const [q, setQ] = useState(initialSearch ?? "");
   const [results, setResults] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ function StudentPicker({ initialSearch, onPick, onClose }: { initialSearch?: str
       // here - the backend's assignRoom() rejects anyone who already has
       // one anyway, but filtering client-side avoids a confusing dead click.
       api.students({ q: q || undefined })
-        .then((r) => setResults(r.students.filter((s) => !s.currentRoom)))
+        .then((r) => setResults(r.students.filter((s) => !s.currentRoom && (!targetStudentId || s.id === targetStudentId))))
         .catch(() => setResults([]))
         .finally(() => setLoading(false));
     }, 300);
@@ -80,6 +81,8 @@ function StudentPicker({ initialSearch, onPick, onClose }: { initialSearch?: str
 }
 
 export default function AdminRooms() {
+  const [searchParams] = useSearchParams();
+  const workflowStudentId = searchParams.get("studentId");
   const [rooms, setRooms] = useState<Room[] | null>(null);
   const [approvedApplications, setApprovedApplications] = useState<ApplicationRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +90,8 @@ export default function AdminRooms() {
   const [status, setStatus] = useState<string | undefined>();
   const [pickerForRoom, setPickerForRoom] = useState<{ room: Room; applicant?: ApplicationRow } | null>(null);
   const [busyRoomId, setBusyRoomId] = useState<string | null>(null);
+  const [workflowStudentName, setWorkflowStudentName] = useState("");
+  const [assignmentComplete, setAssignmentComplete] = useState(false);
 
   const load = useCallback(() => {
     api.rooms({ section, status })
@@ -95,6 +100,16 @@ export default function AdminRooms() {
   }, [section, status]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!workflowStudentId) return;
+    api.student(workflowStudentId)
+      .then((student) => {
+        setWorkflowStudentName(student.fullName);
+        setAssignmentComplete((complete) => complete || !!student.currentRoom);
+      })
+      .catch(() => {});
+  }, [workflowStudentId]);
 
   useEffect(() => {
     let active = true;
@@ -119,6 +134,7 @@ export default function AdminRooms() {
     setBusyRoomId(room.id);
     try {
       await api.assignRoom(room.id, student.id);
+      if (student.id === workflowStudentId) setAssignmentComplete(true);
       load();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Failed to assign room.");
@@ -167,6 +183,20 @@ export default function AdminRooms() {
   return (
     <div style={{ padding: 24 }}>
       <h1 className="font-display" style={{ fontSize: 22, marginBottom: 16 }}>Room Management</h1>
+
+      {workflowStudentId && (
+        <div className="card" style={{ marginBottom: 16, background: "var(--color-accent-soft)", borderColor: "var(--color-accent)" }}>
+          <strong style={{ fontSize: 13 }}>{workflowStudentName || "Approved applicant"}</strong>
+          {assignmentComplete ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+              <span style={{ fontSize: 12.5 }}>Room assigned. Continue to semester enrollment.</span>
+              <Link to={`/admin/students?studentId=${encodeURIComponent(workflowStudentId)}`} className="btn btn-primary"><GraduationCap size={14} /> Enroll student</Link>
+            </div>
+          ) : (
+            <p style={{ fontSize: 12.5, margin: "6px 0 0", color: "var(--color-muted)" }}>Assign this applicant to a room to continue to enrollment.</p>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
         {["Executive Main", "Executive Annex"].map((s) => (
@@ -250,7 +280,8 @@ export default function AdminRooms() {
 
       {pickerForRoom && (
         <StudentPicker
-          initialSearch={pickerForRoom.applicant?.fullName}
+          initialSearch={pickerForRoom.applicant?.fullName ?? workflowStudentName}
+          targetStudentId={workflowStudentId ?? undefined}
           onPick={(student) => handleAssign(pickerForRoom.room, student)}
           onClose={() => setPickerForRoom(null)}
         />

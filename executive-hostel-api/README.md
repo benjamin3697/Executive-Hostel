@@ -38,6 +38,7 @@ Reference: `executive-hostel-design-docs.md` (schema, RBAC matrix, API spec, sec
    Edit `.env`:
    - Paste your `DATABASE_URL`.
    - Generate two separate secrets: `openssl rand -hex 32` (run it twice) for `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET`.
+  - Set `WHATSAPP_GROUP_INVITE_URL` to the hostel group invite link. The API returns it only to authenticated student accounts.
 4. ```bash
    npm run prisma:migrate   # creates all tables from schema.prisma
    npm run seed              # creates the 2 sections, 72 rooms, 2 room types, default fees
