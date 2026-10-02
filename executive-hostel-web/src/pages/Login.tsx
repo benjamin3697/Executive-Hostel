@@ -1,5 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../lib/api";
 
@@ -8,6 +9,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,16 +55,28 @@ export default function Login() {
           style={{ marginBottom: 14 }}
         />
 
-        <label style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Password</label>
-        <input
-          className="input"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-          style={{ marginBottom: 8 }}
-        />
+        <label htmlFor="login-password" style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }}>Password</label>
+        <div style={{ position: "relative", marginBottom: 8 }}>
+          <input
+            id="login-password"
+            className="input"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+            style={{ paddingRight: 44 }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((visible) => !visible)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 32, height: 32, padding: 0, border: 0, background: "transparent", color: "var(--color-muted)", cursor: "pointer" }}
+          >
+            {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+          </button>
+        </div>
         <Link to="/forgot-password" style={{ fontSize: 12.5, color: "var(--color-primary)", display: "block", marginBottom: 16 }}>
           Forgot password?
         </Link>
