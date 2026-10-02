@@ -203,8 +203,8 @@ function PaymentRow({ p }: { p: PaymentHistoryRow }) {
             </div>
           )}
           {p.verifiedAt && <div style={{ fontSize: 12.5, color: "var(--color-muted)" }}>Verified: <strong style={{ color: "var(--color-text)" }}>{fmtDate(p.verifiedAt)}</strong></div>}
-          {(p.evidence?.length ?? 0) > 0 && <div className="payment-evidence-list"><strong>Receipt uploads</strong>{p.evidence?.map((evidence) => <a key={evidence.id} href={evidence.downloadUrl ?? evidence.fileUrl} target="_blank" rel="noreferrer" className="receipt-link"><Receipt size={14} /> {evidence.fileType === "pdf" ? "View PDF receipt" : "Preview receipt"}</a>)}</div>}
-          {p.status === "verified" && p.evidence?.[0] && <a className="btn btn-primary receipt-download" href={p.evidence[0].downloadUrl ?? p.evidence[0].fileUrl} target="_blank" rel="noreferrer"><Receipt size={14} /> Download Official Receipt</a>}
+          {(p.evidence?.length ?? 0) > 0 && <div className="payment-evidence-list"><strong>Receipt uploads</strong>{p.evidence?.map((evidence) => <a key={evidence.id} href={evidence.previewUrl ?? evidence.downloadUrl ?? evidence.fileUrl} target="_blank" rel="noreferrer" className="receipt-link"><Receipt size={14} /> {evidence.fileType === "pdf" ? "View PDF receipt" : "Preview receipt"}</a>)}</div>}
+          {p.status === "verified" && p.evidence?.[0] && <a className="btn btn-primary receipt-download" href={p.evidence[0].downloadUrl ?? p.evidence[0].previewUrl ?? p.evidence[0].fileUrl}><Receipt size={14} /> Download Official Receipt</a>}
         </div>
       )}
     </div>

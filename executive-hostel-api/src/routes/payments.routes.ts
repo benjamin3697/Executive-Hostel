@@ -51,7 +51,8 @@ paymentsRouter.get("/me", requireRole("student"), async (req: AuthenticatedReque
       ...payment,
       evidence: await Promise.all(payment.evidence.map(async (evidence) => ({
         ...evidence,
-        downloadUrl: await getEvidenceDownloadUrl(evidence.fileUrl),
+        previewUrl: await getEvidenceDownloadUrl(evidence.fileUrl),
+        downloadUrl: await getEvidenceDownloadUrl(evidence.fileUrl, "attachment"),
       }))),
     }))));
   } catch (err) {
@@ -243,7 +244,8 @@ paymentsRouter.get("/", requireRole("administrator", "landlady"), async (req, re
       ...payment,
       evidence: await Promise.all(payment.evidence.map(async (evidence) => ({
         ...evidence,
-        downloadUrl: await getEvidenceDownloadUrl(evidence.fileUrl),
+        previewUrl: await getEvidenceDownloadUrl(evidence.fileUrl),
+        downloadUrl: await getEvidenceDownloadUrl(evidence.fileUrl, "attachment"),
       }))),
     })));
     res.json({ total, page, pageSize, payments: paymentsWithDownloadUrls });
@@ -268,7 +270,11 @@ paymentsRouter.get(
     if (!payment) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Payment not found." } });
 
     const evidenceWithUrls = await Promise.all(
-      payment.evidence.map(async (e: { fileUrl: string }) => ({ ...e, downloadUrl: await getEvidenceDownloadUrl(e.fileUrl) }))
+      payment.evidence.map(async (e: { fileUrl: string }) => ({
+        ...e,
+        previewUrl: await getEvidenceDownloadUrl(e.fileUrl),
+        downloadUrl: await getEvidenceDownloadUrl(e.fileUrl, "attachment"),
+      }))
     );
 
     res.json({ ...payment, evidence: evidenceWithUrls });

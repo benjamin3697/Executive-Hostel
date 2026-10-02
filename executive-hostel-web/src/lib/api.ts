@@ -312,7 +312,9 @@ export interface PaymentEvidence {
   id: string;
   fileUrl: string;
   fileType: "image" | "pdf";
-  /** Short-lived signed download URL — only present on the /:id detail endpoint */
+  /** Short-lived signed inline preview URL. */
+  previewUrl?: string;
+  /** Short-lived signed URL with Content-Disposition: attachment. */
   downloadUrl?: string;
 }
 

@@ -82,17 +82,18 @@ async function downloadBlob(url: string, filename: string) {
 
 // ─── Single evidence file tile ─────────────────────────────────────────────────
 function EvidenceTile({ ev, onPreview }: { ev: PaymentEvidence; onPreview: (url: string) => void }) {
-  const url = ev.downloadUrl ?? ev.fileUrl;
+  const url = ev.previewUrl ?? ev.downloadUrl ?? ev.fileUrl;
+  const downloadUrl = ev.downloadUrl ?? url;
   const isImage = ev.fileType === "image";
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
     setDownloading(true);
     try {
-      await downloadBlob(url, isImage ? "payment-receipt.jpg" : "payment-receipt.pdf");
+      await downloadBlob(downloadUrl, isImage ? "payment-receipt.jpg" : "payment-receipt.pdf");
     } catch {
       // Fallback: open in new tab if fetch fails (e.g. CORS blocked)
-      window.open(url, "_blank", "noopener,noreferrer");
+      window.open(downloadUrl, "_blank", "noopener,noreferrer");
     } finally {
       setDownloading(false);
     }
@@ -202,10 +203,10 @@ function PaymentCard({
         const ev = evidenceToShow[i];
         const filename = `payment-receipt-${i + 1}.${ev.fileType === "pdf" ? "pdf" : "jpg"}`;
         try {
-          const url = ev.downloadUrl ?? ev.fileUrl;
+          const url = ev.downloadUrl ?? ev.previewUrl ?? ev.fileUrl;
           await downloadBlob(url, filename);
         } catch {
-          window.open(ev.downloadUrl ?? ev.fileUrl, "_blank", "noopener,noreferrer");
+          window.open(ev.downloadUrl ?? ev.previewUrl ?? ev.fileUrl, "_blank", "noopener,noreferrer");
         }
         if (i < evidenceToShow.length - 1) await new Promise((r) => setTimeout(r, 400));
       }

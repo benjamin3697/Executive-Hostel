@@ -68,12 +68,17 @@ export async function createStorageUploadUrl(params: {
  *
  * Existing Supabase URLs are returned as-is so historical records keep working.
  */
-export async function getEvidenceDownloadUrl(key: string): Promise<string> {
+export async function getEvidenceDownloadUrl(key: string, disposition: "inline" | "attachment" = "inline"): Promise<string> {
   // Already a full URL (e.g. Supabase public URL) — return as-is.
   if (key.startsWith("http://") || key.startsWith("https://")) {
     return key;
   }
-  return getSignedUrl(s3, new GetObjectCommand({ Bucket: env.s3Bucket, Key: key }), { expiresIn: 120 });
+  const filename = key.split("/").pop()?.replace(/["\\\r\n]/g, "_") ?? "evidence";
+  return getSignedUrl(s3, new GetObjectCommand({
+    Bucket: env.s3Bucket,
+    Key: key,
+    ResponseContentDisposition: `${disposition}; filename="${filename}"`,
+  }), { expiresIn: 120 });
 }
 
 export async function deleteEvidenceObject(key: string): Promise<void> {
