@@ -24,7 +24,8 @@ export class AllocationError extends Error {
  *   1. Room exists
  *   2. Room is vacant (not occupied/maintenance/unavailable; reserved
  *      rooms must be released or explicitly reassigned by an admin first)
- *   3. Student exists and doesn't already have an active room
+ *   3. Student exists and doesn't already have an active room. Checked-out
+ *      students may be assigned again; check-in changes their status to active.
  *   4. Correct fee snapshot is left for Payments (Phase 6) to reference
  *      via room.roomTypeId - no fee is hardcoded here
  */
@@ -59,10 +60,6 @@ export async function assignRoom(params: {
     if (student.currentRoomId) {
       throw new AllocationError("STUDENT_ALREADY_ASSIGNED", "This student already has an active room. Check them out of it first.");
     }
-    if (student.status === "checked_out") {
-      throw new AllocationError("STUDENT_CHECKED_OUT", "This student's record is checked out. Reactivate before assigning a room.");
-    }
-
     // These two updates + the unique constraints on currentStudentId /
     // currentRoomId are what make "one room = one student" unbreakable
     // even under concurrent requests - a second transaction hitting the

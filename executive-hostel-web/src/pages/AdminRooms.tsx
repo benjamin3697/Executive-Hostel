@@ -69,7 +69,7 @@ function StudentPicker({ initialSearch, targetStudentId, onPick, onClose }: { in
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>{s.fullName}</div>
                 <div style={{ fontSize: 11.5, color: "var(--color-muted)" }}>
-                  {s.registrationNumber} {s.course && `· ${s.course}`}
+                  {s.registrationNumber} {s.course && `· ${s.course}`}{s.status === "checked_out" && " · Returning resident"}
                 </div>
               </div>
             </button>
